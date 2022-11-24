@@ -1,6 +1,39 @@
 
 
 describe "eswidget", ->
+  local snapshot
+
+  -- make random return incremening integers
+  before_each ->
+    snapshot = assert\snapshot!
+    k = 0
+    stub math, "random", ->
+      k += 1
+      k
+
+  after_each ->
+    snapshot\revert!
+
+  describe "js_init", ->
+    it "no default js_init if module is not specified", ->
+      class MyWidget extends require "lapis.eswidget"
+      widget = MyWidget!
+      assert.same {nil, "widget does not have an @@es_module"}, {widget\js_init!}
+
+    it "generates default js_init", ->
+      class MyWidget extends require "lapis.eswidget"
+        @es_module: [[alert('hello world')]]
+
+      widget = MyWidget!
+      widget2 = MyWidget!
+
+      assert.same {"init_MyWidget('#my_widget_1', null);"}, {widget\js_init!}
+      -- returns same initialization
+      assert.same {"init_MyWidget('#my_widget_1', null);"}, {widget\js_init!}
+
+      -- returns different id to avoid conflict
+      assert.same {"init_MyWidget('#my_widget_2', null);"}, {widget2\js_init!}
+
   describe "compile_es_module", ->
     it "attempts to compile module without code", ->
       class MyWidget extends require "lapis.eswidget"

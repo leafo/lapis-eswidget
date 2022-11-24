@@ -1,10 +1,40 @@
 local Widget
 Widget = require("lapis.html").Widget
+local underscore
+underscore = require("lapis.util").underscore
+local to_json
+to_json = require("lapis.util").to_json
 local ESWidget
 do
   local _class_0
   local _parent_0 = Widget
-  local _base_0 = { }
+  local _base_0 = {
+    widget_id = function(self)
+      if not (self._widget_id) then
+        self._widget_id = tostring(self.__class:widget_name()) .. "_" .. tostring(math.random(0, 10000000))
+        if self._opts then
+          self._opts.id = self._opts.id or self._widget_id
+        end
+      end
+      return self._widget_id
+    end,
+    widget_selector = function(self)
+      return "'#" .. tostring(self:widget_id()) .. "'"
+    end,
+    js_init = function(self, widget_params)
+      if widget_params == nil then
+        widget_params = nil
+      end
+      if not (rawget(self.__class, "es_module")) then
+        return nil, "widget does not have an @@es_module"
+      end
+      local method_name = self.__class:es_module_init_function_name()
+      if not (method_name) then
+        return nil, "no init method name"
+      end
+      return tostring(method_name) .. "(" .. tostring(self:widget_selector()) .. ", " .. tostring(to_json(widget_params)) .. ");"
+    end
+  }
   _base_0.__index = _base_0
   setmetatable(_base_0, _parent_0.__base)
   _class_0 = setmetatable({
@@ -34,19 +64,23 @@ do
   })
   _base_0.__class = _class_0
   local self = _class_0
+  self.widget_name = function(self)
+    return underscore(self.__name or "some_widget")
+  end
   self.asset_packages = { }
-  self.js_init_method_name = function(self)
+  self.es_module_init_function_name = function(self)
     return "init_" .. tostring(self.__name)
   end
-  self.compile_js_init = function(self)
-    if not (rawget(self, "js_init")) then
-      return nil, "no @@js_init"
+  self.compile_es_module = function(self)
+    if not (rawget(self, "es_module")) then
+      return nil, "no @@es_module"
     end
     local import_lines = { }
     local code_lines = { }
     local trim
     trim = require("lapis.util").trim
-    for line in self.js_init:gmatch("([^\r\n]+)") do
+    assert(type(self.es_module) == "string", "@es_module must be a string")
+    for line in self.es_module:gmatch("([^\r\n]+)") do
       local _continue_0 = false
       repeat
         if line:match("^%s*$") then
@@ -66,7 +100,7 @@ do
     end
     return table.concat({
       table.concat(import_lines, "\n"),
-      "window." .. tostring(self:js_init_method_name()) .. " = function(widget_selector, widget_params) {",
+      "window." .. tostring(self:es_module_init_function_name()) .. " = function(widget_selector, widget_params) {",
       table.concat(code_lines, "\n"),
       "}"
     }, "\n")

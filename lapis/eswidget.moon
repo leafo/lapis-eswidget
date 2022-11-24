@@ -1,16 +1,24 @@
+-- TODO: should we also provide the constructor/render params system in this base widget
 
 import Widget from require "lapis.html"
+import underscore from require "lapis.util"
+
+import to_json from require "lapis.util"
 
 class ESWidget extends Widget
+  @widget_name: => underscore @__name or "some_widget"
   @asset_packages: {} -- the packages this widget will be placed into
 
-  @js_init_method_name: => "init_#{@__name}"
+  -- staic ES module initialization
+  -- @@es_module: [[]]
+
+  @es_module_init_function_name: => "init_#{@__name}"
 
   -- this splits apart the js_init into two parts
   -- js_init must be a class method
-  @compile_js_init: =>
+  @compile_es_module: =>
     -- TODO: how should this work with inheriting?
-    return nil, "no @@js_init" unless rawget @, "js_init"
+    return nil, "no @@es_module" unless rawget @, "es_module"
 
     -- split import and non-import statemetns
     import_lines = {}
@@ -18,7 +26,9 @@ class ESWidget extends Widget
 
     import trim from require "lapis.util"
 
-    for line in @js_init\gmatch "([^\r\n]+)"
+    assert type(@es_module) == "string", "@es_module must be a string"
+
+    for line in @es_module\gmatch "([^\r\n]+)"
       continue if line\match "^%s*$"
 
       if line\match "^%s*import"
@@ -28,11 +38,25 @@ class ESWidget extends Widget
 
     table.concat {
       table.concat import_lines,  "\n"
-      "window.#{@js_init_method_name!} = function(widget_selector, widget_params) {"
+      "window.#{@es_module_init_function_name!} = function(widget_selector, widget_params) {"
       table.concat code_lines, "\n"
       "}"
     }, "\n"
 
+  -- unique ID for encloding element
+  widget_id: =>
+    unless @_widget_id
+      @_widget_id = "#{@@widget_name!}_#{math.random 0, 10000000}"
+      @_opts.id or= @_widget_id if @_opts
+    @_widget_id
 
-  -- staic ES module initialization
-  -- @@es_module: [[]]
+  -- a selector that can be used to uniquely find the element on the page
+  widget_selector: =>
+    "'##{@widget_id!}'"
+
+  js_init: (widget_params=nil) =>
+    return nil, "widget does not have an @@es_module" unless rawget @@, "es_module"
+    method_name = @@es_module_init_function_name!
+    return nil, "no init method name" unless method_name
+
+    "#{method_name}(#{@widget_selector!}, #{to_json widget_params});"
