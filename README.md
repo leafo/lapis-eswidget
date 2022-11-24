@@ -24,25 +24,32 @@ class MyWidget extends require "lapis.eswidget"
 
 ```
 
-Extracting the module code:
+Extracting the module code on the command line:
 
 ```bash
 lapis-eswidget compile_js widgets.my_widget
 ```
 
+Extracting module code in code:
+
+```moonscript
+MyWidget = require("widgets.my_widget")
+
+print MyWidget\compile_es_module!
+```
+
 ## Static vs Instance code
 
 There are two kinds of data assoaciated with each widget during it's render
-lifecycle.
+lifecycle:
 
 **Static** code and data is unchanging and can be compiled and used during the
 ahead-of-time building of packages. This includes things like the ES Module
 initializatioon function, CSS classnames.
 
-**Instance** code and data is only available during the rendering of a widget.
-This could include things like the dynamically created widget ID to uniquely
-referencing an elmenet on a page.
-
+**Instance** code and data is only available during the rendering of a widget
+during a request. This could include things like the dynamically created
+widget ID to uniquely referencing its element on a page.
 
 ## HTML Encapsulation
 
@@ -51,9 +58,9 @@ automatically generate a class and ID for an HTML element to allow it to be
 uniquely identified by JavaScript initializion, and generally identified by CSS
 selectors.
 
-In order to take advanage of this, the `inner_content` method must be
-implemented instead of the content method on the widget sub-class, otherwise
-the enclosing element logic will be overwritten.
+To user encapsulation, the `inner_content` method must be implemented instead
+of the `content` method on the widget sub-class, otherwise the enclosing
+element logic will be overwritten.
 
 The generated class names will utilize the entire class hierachy:
 
@@ -70,9 +77,23 @@ Three\class_list! -->
 
 ## Parameter Validation
 
-TODO: Have tableshape spec for parmeters to widget creation
+TODO: `render_types` and `prop_types`
 
 ## Asset Packages
+
+The `asset_packages` class field is an array of package names that a widget's
+assets should be aggregated into when bundling. No asset package names are set
+by default, if you wish to aggregate assets then you will need to provide at
+least one asset package.
+
+The end result of bundling will result in a file (or files) containing output
+from widgets that target that package, eg `main` → `main.js`, `main.css`
+
+Multiple asset packages can be used for splitting code at a high level to
+reduce total bundle sizes.
+
+The first asset package in the list of asset packages is used to calculate the
+canonical path for Associated Files (see below).
 
 ## Building Asset Spec
 
