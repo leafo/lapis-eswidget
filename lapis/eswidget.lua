@@ -1,7 +1,15 @@
-local Widget
-Widget = require("lapis.html").Widget
+local Widget, is_mixins_class
+do
+  local _obj_0 = require("lapis.html")
+  Widget, is_mixins_class = _obj_0.Widget, _obj_0.is_mixins_class
+end
 local underscore
 underscore = require("lapis.util").underscore
+if not (is_mixins_class) then
+  is_mixins_class = function(cls)
+    return rawget(cls, "_mixins_class") == true
+  end
+end
 local to_json
 to_json = require("lapis.util").to_json
 local ESWidget
@@ -116,6 +124,9 @@ do
   self.widget_class_list = function(self)
     if self == ESWidget then
       return 
+    end
+    if is_mixins_class(self) then
+      return self.__parent:widget_class_list()
     end
     return self:widget_class_name(), self.__parent:widget_class_list()
   end

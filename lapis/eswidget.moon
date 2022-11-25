@@ -1,7 +1,11 @@
 -- TODO: should we also provide the constructor/render params system in this base widget
 
-import Widget from require "lapis.html"
+import Widget, is_mixins_class from require "lapis.html"
 import underscore from require "lapis.util"
+
+-- This is support for < lapis 1.11
+unless is_mixins_class
+  is_mixins_class = (cls) -> rawget(cls, "_mixins_class") == true
 
 import to_json from require "lapis.util"
 
@@ -13,6 +17,9 @@ class ESWidget extends Widget
   @widget_class_list: =>
     if @ == ESWidget
       return
+
+    if is_mixins_class @
+      return @__parent\widget_class_list!
 
     return @widget_class_name!, @__parent\widget_class_list!
 

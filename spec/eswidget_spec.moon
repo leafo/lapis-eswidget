@@ -28,6 +28,21 @@ describe "eswidget", ->
       assert.same {"user_profile_widget"}, {UserProfile\widget_class_list!}
       assert.same {"custom_user_profile_widget", "user_profile_widget"}, {CustomUserProfile\widget_class_list!}
 
+    it "generates class list without including mixins classes", ->
+      class MixinA
+        hello: => "world"
+
+      class MixinB
+        another: => "zone"
+
+      class UserProfile extends require "lapis.eswidget"
+        @include MixinA
+
+      class CustomUserProfile extends UserProfile
+        @include MixinB
+
+      assert.same {"custom_user_profile_widget", "user_profile_widget"}, {CustomUserProfile\widget_class_list!}
+
     it "generates class list with custom suffix", ->
       class BasePage extends require "lapis.eswidget"
         @widget_class_name: =>
