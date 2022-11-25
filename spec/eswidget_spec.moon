@@ -1,6 +1,9 @@
 
+import sorted_pairs from require "spec.helpers"
 
 describe "eswidget", ->
+  sorted_pairs!
+
   local snapshot
 
   -- make random return incremening integers
@@ -13,6 +16,41 @@ describe "eswidget", ->
 
   after_each ->
     snapshot\revert!
+
+  describe "widget_class_list", ->
+    it "generates nothing for base class", ->
+      Widget = require "lapis.eswidget"
+      assert.same {}, {Widget\widget_class_list!}
+
+    it "generates class list", ->
+      class UserProfile extends require "lapis.eswidget"
+      class CustomUserProfile extends UserProfile
+      assert.same {"user_profile_widget"}, {UserProfile\widget_class_list!}
+      assert.same {"custom_user_profile_widget", "user_profile_widget"}, {CustomUserProfile\widget_class_list!}
+
+    it "generates class list with custom suffix", ->
+      class BasePage extends require "lapis.eswidget"
+        @widget_class_name: =>
+          if @ == BasePage
+            "page"
+          else
+            "#{@widget_name!}_page"
+
+      class HelloWorld extends BasePage
+      class LogIn extends HelloWorld
+
+      assert.same {"page"}, {BasePage\widget_class_list!}
+      assert.same {"hello_world_page", "page"}, {HelloWorld\widget_class_list!}
+      assert.same {"log_in_page", "hello_world_page", "page"}, {LogIn\widget_class_list!}
+
+  describe "content", ->
+    it "renders empty widget", ->
+      class UserProfile extends require "lapis.eswidget"
+      class CustomUserProfile extends UserProfile
+
+      assert.same [[<div class="user_profile_widget" id="user_profile_1"></div>]], UserProfile!\render_to_string!
+
+      assert.same [[<div class="custom_user_profile_widget user_profile_widget" id="custom_user_profile_2"></div>]], CustomUserProfile!\render_to_string!
 
   describe "js_init", ->
     it "no default js_init if module is not specified", ->
@@ -33,6 +71,18 @@ describe "eswidget", ->
 
       -- returns different id to avoid conflict
       assert.same {"init_MyWidget('#my_widget_2', null);"}, {widget2\js_init!}
+
+    it "js_init with parameters", ->
+      class MyWidget extends require "lapis.eswidget"
+        @es_module: [[alert('hello world')]]
+
+        js_init: =>
+          super {
+            color: "blue"
+          }
+
+      widget = MyWidget!
+      assert.same {[[init_MyWidget('#my_widget_1', {"color":"blue"});]]}, {widget\js_init!}
 
   describe "compile_es_module", ->
     it "attempts to compile module without code", ->

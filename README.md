@@ -48,8 +48,9 @@ ahead-of-time building of packages. This includes things like the ES Module
 initializatioon function (`@@es_module`), CSS classnames.
 
 **Instance** code and data is only available during the rendering of a widget
-during a request. This could include things like the dynamically created
-widget ID to uniquely referencing its element on a page.
+during a request. This could include things like the dynamically created widget
+ID to uniquely referencing its element on a page, parameters to JavaScript
+initialization.
 
 ## HTML Encapsulation
 

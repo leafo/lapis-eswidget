@@ -6,7 +6,16 @@ import underscore from require "lapis.util"
 import to_json from require "lapis.util"
 
 class ESWidget extends Widget
+  widget_enclosing_element: "div"
   @widget_name: => underscore @__name or "some_widget"
+  @widget_class_name: => "#{@widget_name!}_widget"
+
+  @widget_class_list: =>
+    if @ == ESWidget
+      return
+
+    return @widget_class_name!, @__parent\widget_class_list!
+
   @asset_packages: {} -- the packages this widget will be placed into
 
   -- staic ES module initialization
@@ -47,7 +56,6 @@ class ESWidget extends Widget
   widget_id: =>
     unless @_widget_id
       @_widget_id = "#{@@widget_name!}_#{math.random 0, 10000000}"
-      @_opts.id or= @_widget_id if @_opts
     @_widget_id
 
   -- a selector that can be used to uniquely find the element on the page
@@ -60,3 +68,29 @@ class ESWidget extends Widget
     return nil, "no init method name" unless method_name
 
     "#{method_name}(#{@widget_selector!}, #{to_json widget_params});"
+
+  content: (fn=@inner_content) =>
+    classes = { @@widget_class_list! }
+
+    local inner
+    el_opts = { id: @widget_id!, class: classes, -> raw inner }
+
+    append_js = if js = @js_init!
+      if @layout_opts
+        @content_for "js_init", ->
+          raw js
+          unless js\match ";%s$"
+            raw ";"
+        nil
+      else
+        js
+
+    inner = capture -> fn @
+    element @widget_enclosing_element or "div", el_opts
+
+    if append_js
+      script type: "text/javascript", ->
+        raw append_js
+
+
+  inner_content: =>

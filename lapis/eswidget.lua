@@ -9,12 +9,10 @@ do
   local _class_0
   local _parent_0 = Widget
   local _base_0 = {
+    widget_enclosing_element = "div",
     widget_id = function(self)
       if not (self._widget_id) then
         self._widget_id = tostring(self.__class:widget_name()) .. "_" .. tostring(math.random(0, 10000000))
-        if self._opts then
-          self._opts.id = self._opts.id or self._widget_id
-        end
       end
       return self._widget_id
     end,
@@ -33,7 +31,52 @@ do
         return nil, "no init method name"
       end
       return tostring(method_name) .. "(" .. tostring(self:widget_selector()) .. ", " .. tostring(to_json(widget_params)) .. ");"
-    end
+    end,
+    content = function(self, fn)
+      if fn == nil then
+        fn = self.inner_content
+      end
+      local classes = {
+        self.__class:widget_class_list()
+      }
+      local inner
+      local el_opts = {
+        id = self:widget_id(),
+        class = classes,
+        function()
+          return raw(inner)
+        end
+      }
+      local append_js
+      do
+        local js = self:js_init()
+        if js then
+          if self.layout_opts then
+            self:content_for("js_init", function()
+              raw(js)
+              if not (js:match(";%s$")) then
+                return raw(";")
+              end
+            end)
+            append_js = nil
+          else
+            append_js = js
+          end
+        end
+      end
+      inner = capture(function()
+        return fn(self)
+      end)
+      element(self.widget_enclosing_element or "div", el_opts)
+      if append_js then
+        return script({
+          type = "text/javascript"
+        }, function()
+          return raw(append_js)
+        end)
+      end
+    end,
+    inner_content = function(self) end
   }
   _base_0.__index = _base_0
   setmetatable(_base_0, _parent_0.__base)
@@ -66,6 +109,15 @@ do
   local self = _class_0
   self.widget_name = function(self)
     return underscore(self.__name or "some_widget")
+  end
+  self.widget_class_name = function(self)
+    return tostring(self:widget_name()) .. "_widget"
+  end
+  self.widget_class_list = function(self)
+    if self == ESWidget then
+      return 
+    end
+    return self:widget_class_name(), self.__parent:widget_class_list()
   end
   self.asset_packages = { }
   self.es_module_init_function_name = function(self)
