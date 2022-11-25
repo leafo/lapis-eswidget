@@ -67,6 +67,14 @@ describe "eswidget", ->
 
       assert.same [[<div class="custom_user_profile_widget user_profile_widget" id="custom_user_profile_2"></div>]], CustomUserProfile!\render_to_string!
 
+    it "renders widget with code es_module", ->
+      class UserProfile extends require "lapis.eswidget"
+        @es_module: [[
+          console.log(widget_selector, widget_params)
+        ]]
+
+      assert.same [[<div class="user_profile_widget" id="user_profile_1"></div><script type="text/javascript">init_UserProfile('#user_profile_1', null);</script>]], UserProfile!\render_to_string!
+
   describe "js_init", ->
     it "no default js_init if module is not specified", ->
       class MyWidget extends require "lapis.eswidget"
