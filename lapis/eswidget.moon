@@ -86,7 +86,7 @@ class ESWidget extends Widget
       if @layout_opts
         @content_for "js_init", ->
           raw js
-          unless js\match ";%s$"
+          unless js\match ";%s*$"
             raw ";"
         nil
       else
