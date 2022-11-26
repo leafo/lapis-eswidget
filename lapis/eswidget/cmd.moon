@@ -71,10 +71,10 @@ run = (args) ->
     when "compile_js"
       if args.file
         widget = require path_to_module args.file
-        print widget\compile_js_init!
+        print widget\compile_es_module!
       elseif args.module
         widget = require args.module
-        print widget\compile_js_init!
+        print widget\compile_es_module!
       else
         count = 0
 
@@ -82,7 +82,7 @@ run = (args) ->
           if args.package
             continue unless types.array_contains(args.package) widget.asset_packages
 
-          js_code = assert widget\compile_js_init!
+          js_code = assert widget\compile_es_module!
           count += 1
           print "// #{file} (#{table.concat widget.asset_packages, ", "})"
           print js_code
@@ -131,7 +131,7 @@ run = (args) ->
 
           print!
           -- declare macros
-          print "!compile_js = |> ^ compile_js %f > %o^ $(LUAJIT) cmd/widget_helper.lua compile_js --file %f > %o |>"
+          print "!compile_js = |> ^ compile_js %f > %o^ lapis-eswidget compile_js #{args.moonscript and "--moonscript" or ""} --file %f > %o |>"
           print [[!join_bundle = |> ^ join bundle %o^ (for file in %f; do echo 'import "../../'$file'"; ' | sed 's/\.js//'; done) > %o |>]]
           print "!esbuild_bundle = |> ^ esbuild bundle %o^ NODE_PATH=static/coffee $(ESBUILD) --target=es6 --log-level=warning --bundle %f --outfile=%o |>"
           print "!esbuild_bundle_minified = |> ^ esbuild minified bundle %o^ NODE_PATH=static/coffee $(ESBUILD) --target=es6 --log-level=warning --minify --bundle %f --outfile=%o |>"
@@ -178,7 +178,7 @@ run = (args) ->
 
       print "JS Init"
       print "=================="
-      print Widget\compile_js_init!
+      print Widget\compile_es_module!
 
       -- print "Example invocation"
       -- print "=================="
