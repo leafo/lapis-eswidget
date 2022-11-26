@@ -5,6 +5,11 @@ do
 end
 local underscore
 underscore = require("lapis.util").underscore
+local types, is_type
+do
+  local _obj_0 = require("tableshape")
+  types, is_type = _obj_0.types, _obj_0.is_type
+end
 if not (is_mixins_class) then
   is_mixins_class = function(cls)
     return rawget(cls, "_mixins_class") == true
@@ -12,6 +17,17 @@ if not (is_mixins_class) then
 end
 local to_json
 to_json = require("lapis.util").to_json
+local convert_prop_types
+convert_prop_types = function(cls, tbl)
+  local t = types.shape(tbl, {
+    check_all = true
+  })
+  return types.annotate(t, {
+    format_error = function(self, value, err)
+      return tostring(cls.__name) .. ": " .. tostring(err)
+    end
+  })
+end
 local ESWidget
 do
   local _class_0
@@ -62,7 +78,7 @@ do
           if self.layout_opts then
             self:content_for("js_init", function()
               raw(js)
-              if not (js:match(";%s$")) then
+              if not (js:match(";%s*$")) then
                 return raw(";")
               end
             end)
@@ -89,8 +105,19 @@ do
   _base_0.__index = _base_0
   setmetatable(_base_0, _parent_0.__base)
   _class_0 = setmetatable({
-    __init = function(self, ...)
-      return _class_0.__parent.__init(self, ...)
+    __init = function(self, props, ...)
+      if self.__class.prop_types then
+        local _
+        if is_type(self.__class.prop_types) then
+          self.props, _ = assert(self.__class.prop_types:transform(props or { }))
+        elseif type(self.__class.prop_types) == "table" then
+          self.props, _ = assert(convert_prop_types(self.__class, self.__class.prop_types):transform(props or { }))
+        else
+          self.props, _ = error("Got prop_types of unknown type")
+        end
+      else
+        return _class_0.__parent.__init(self, props, ...)
+      end
     end,
     __base = _base_0,
     __name = "ESWidget",

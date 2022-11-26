@@ -3,11 +3,24 @@
 import Widget, is_mixins_class from require "lapis.html"
 import underscore from require "lapis.util"
 
+import types, is_type from require "tableshape"
+
 -- This is support for < lapis 1.11
 unless is_mixins_class
   is_mixins_class = (cls) -> rawget(cls, "_mixins_class") == true
 
 import to_json from require "lapis.util"
+
+-- convert bare table to a tableshape object for handling prop_types
+convert_prop_types = (cls, tbl) ->
+  t = types.shape tbl, {
+    check_all: true
+  }
+
+  types.annotate t, {
+    format_error: (value, err) => "#{cls.__name}: #{err}"
+  }
+
 
 class ESWidget extends Widget
   widget_enclosing_element: "div"
@@ -58,6 +71,26 @@ class ESWidget extends Widget
       table.concat code_lines, "\n"
       "}"
     }, "\n"
+
+  new: (props, ...) =>
+    if @@prop_types
+      @props, _ = if is_type @@prop_types
+        assert @@prop_types\transform props or {}
+      elseif type(@@prop_types) == "table"
+        assert convert_prop_types(@@, @@prop_types)\transform props or {}
+      else
+        error "Got prop_types of unknown type"
+
+      -- -- TOOD: if the prop types generates any state we can just store it directly
+      -- -- into the instance. Is this a bad idea? What if things generated state
+      -- -- as side effect, they will need to be scoped
+      -- if state
+      --   for k, v in pairs state
+      --     @[k] = v
+
+    else
+      super props, ...
+
 
   -- unique ID for encloding element
   widget_id: =>

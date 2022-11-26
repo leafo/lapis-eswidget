@@ -173,7 +173,43 @@ window.get_started = function(widget_selector, widget_params) {
           alert('hi there')
 }]], output
 
+  describe "prop_types", ->
+    import types from require "tableshape"
+
+    it "validates simple props", ->
+      class Something extends require "lapis.eswidget"
+        @prop_types: {
+          id: types.number / (n) -> n + 1
+          name: types.string
+        }
+
+      assert.has_error(
+        -> Something {}
+        [[Something: field "id": expected type "number", got "nil"; field "name": expected type "string", got "nil"]]
+      )
+
+      w = Something { name: "hello", id: 2323 }
+      assert.same {
+        name: "hello"
+        id: 2324
+      }, w.props
 
 
+    it "validates props with type object", ->
+      class Something extends require "lapis.eswidget"
+        @prop_types: types.partial {
+          name: types.string
+        }
 
+      assert.has_error(
+        -> Something {}
+        [[field "name": expected type "string", got "nil"]]
+      )
+
+      w = Something { name: "hello", id: 2323, thing: true }
+      assert.same {
+        name: "hello"
+        thing: true
+        id: 2323
+      }, w.props
 
