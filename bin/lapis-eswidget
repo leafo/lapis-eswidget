@@ -30,6 +30,9 @@ do
     "json",
     "tup"
   }):default("json")
+  _with_0:option("--source-dir", "The working directory for source files (Will be set to NODE_PATH for build)"):default("static/js")
+  _with_0:option("--output-dir", "Destination of final compiled asset packages"):default("static")
+  _with_0:option("--esbuild-bin", "Set the path to the esbuild binary. When empty, will search for ESBUILD tup environment variable")
 end
 local args = parser:parse((function()
   local _accum_0 = { }

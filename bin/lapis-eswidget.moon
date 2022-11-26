@@ -23,6 +23,10 @@ with parser\command "generate_spec", "Scan widgets and generate specification fo
 
   \option("--format", "Output format for scan results")\choices({"json", "tup"})\default "json"
 
+  \option("--source-dir", "The working directory for source files (Will be set to NODE_PATH for build)")\default "static/js"
+  \option("--output-dir", "Destination of final compiled asset packages")\default "static"
+  \option("--esbuild-bin", "Set the path to the esbuild binary. When empty, will search for ESBUILD tup environment variable")
+
 args = parser\parse [v for _, v in ipairs _G.arg]
 
 import run from require("lapis.eswidget.cmd")

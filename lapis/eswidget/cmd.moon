@@ -1,6 +1,15 @@
 import types from require "tableshape"
 import subclass_of from require "tableshape.moonscript"
 
+import shell_escape, join from require "lapis.cmd.path"
+
+-- quote shell escapes str if necessary
+shell_quote = (str) ->
+  if str\match "'"
+    "'#{shell_escape str}'"
+  else
+    str
+
 print_warning = (msg) ->
   io.stderr\write msg
   io.stderr\write "\n"
@@ -125,18 +134,35 @@ run = (args) ->
           print "export LUA_PATH"
           print "export LUA_CPATH"
 
-          -- TODO: test single file compiling to samge package
-
+          if args.esbuild_bin
+            print "ESBUILD=#{shell_quote args.esbuild_bin}"
 
           print!
           -- declare macros
+
+          -- relative path to move from args.source_dir to the top level directory
+          -- eg static/js -> ../..
+          source_to_top = do
+            if args.source_dir\match "^/"
+              error "--source-dir must be a relative path from the top level directory, and not an absolute path"
+
+            if args.source_dir\match("%.%.") or args.source_dir\match("%./")
+              error "--source-dir must not use ../ or ./"
+
+            args.source_dir\gsub("[^/]+", "..") -- this may not be very reliable, but should work in simple cases
+
           print "!compile_js = |> ^ compile_js %f > %o^ lapis-eswidget compile_js #{args.moonscript and "--moonscript" or ""} --file %f > %o |>"
-          print [[!join_bundle = |> ^ join bundle %o^ (for file in %f; do echo 'import "../../'$file'"; ' | sed 's/\.js//'; done) > %o |>]]
-          print "!esbuild_bundle = |> ^ esbuild bundle %o^ NODE_PATH=static/coffee $(ESBUILD) --target=es6 --log-level=warning --bundle %f --outfile=%o |>"
-          print "!esbuild_bundle_minified = |> ^ esbuild minified bundle %o^ NODE_PATH=static/coffee $(ESBUILD) --target=es6 --log-level=warning --minify --bundle %f --outfile=%o |>"
+          print [[!join_bundle = |> ^ join bundle %o^ (for file in %f; do echo 'import "]] .. join(source_to_top, "'$file'") .. [[";' | sed 's/\.js//'; done) > %o |>]]
+          print "!esbuild_bundle = |> ^ esbuild bundle %o^ NODE_PATH=#{shell_quote args.source_dir} $(ESBUILD) --target=es6 --log-level=warning --bundle %f --outfile=%o |>"
+          print "!esbuild_bundle_minified = |> ^ esbuild minified bundle %o^ NODE_PATH=#{shell_quote args.source_dir} $(ESBUILD) --target=es6 --log-level=warning --minify --bundle %f --outfile=%o |>"
 
           print!
 
+          package_source_target = (package) ->
+            join args.source_dir, "#{package}.js"
+
+          package_output_target = (package, suffix=".js") ->
+            join args.output_dir, "#{package}#{suffix}"
 
           for package in *packages
             files = package_files[package]
@@ -145,16 +171,16 @@ run = (args) ->
             print!
             print "# package: #{package}"
             for file in *files
-              out_file = file\gsub "%.moon", ".js"
+              out_file = file\gsub("%.#{search_extension}$", "") .. ".js"
               print ": #{file} | $(TOP)/<moon> |> !compile_js |> #{out_file} {package_#{package}}"
 
-            print ": {package_#{package}} |> !join_bundle |> static/coffee/#{package}.js"
-            print ": static/coffee/#{package}.js | {package_#{package}} $(TOP)/<coffee> |> !esbuild_bundle |> static/#{package}.js {packages}"
+            print ": {package_#{package}} |> !join_bundle |> #{shell_quote package_source_target package}"
+            print ": #{package_source_target package} | {package_#{package}} $(TOP)/<coffee> |> !esbuild_bundle |> #{shell_quote package_output_target package} {packages}"
 
           print!
           print "# minifying packages"
           for package in *packages
-            print ": static/coffee/#{package}.js | {packages} |> !esbuild_bundle_minified |> static/#{package}.min.js"
+            print ": #{package_source_target package} | {packages} |> !esbuild_bundle_minified |> #{shell_quote package_output_target package, ".min.js"}"
 
     when "debug"
       Widget = require args.module_name
