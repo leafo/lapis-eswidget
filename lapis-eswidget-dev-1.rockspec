@@ -20,9 +20,8 @@ dependencies = {
 build = {
   type = "builtin",
   modules = {
-    ["lapis.cmd.actions.eswidget"] = "lapis/cmd/actions/eswidget.lua",
-    ["lapis.eswidget.cmd"] = "lapis/eswidget/cmd.lua",
     ["lapis.eswidget"] = "lapis/eswidget.lua",
+    ["lapis.eswidget.cmd"] = "lapis/eswidget/cmd.lua",
     ["lapis.eswidget.render_flow"] = "lapis/eswidget/render_flow.lua",
   },
   install = {
