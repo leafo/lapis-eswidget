@@ -1,5 +1,5 @@
 
-class Login extends require "lapis.eswidget"
+class UserProfile extends require "lapis.eswidget"
   @asset_packages: {"main"}
 
   @es_module: [[

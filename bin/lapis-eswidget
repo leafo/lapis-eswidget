@@ -5,6 +5,18 @@ trim = require("lapis.util").trim
 local parser = argparse("widget_helper.moon", "Widget asset compilation and build generation")
 parser:command_target("command")
 parser:flag("--moonscript", "Enable MoonScript module loading")
+local to_array
+to_array = function()
+  return function(str)
+    local _accum_0 = { }
+    local _len_0 = 1
+    for d in str:gmatch("[^,]+") do
+      _accum_0[_len_0] = trim(d)
+      _len_0 = _len_0 + 1
+    end
+    return _accum_0
+  end
+end
 do
   local _with_0 = parser:command("debug", "Show any extractable information about a widget module")
   _with_0:argument("module_name")
@@ -14,18 +26,11 @@ do
   _with_0:option("--module")
   _with_0:option("--file")
   _with_0:option("--package")
+  _with_0:option("--widget-dirs", "Paths where widgets are located. Only used for compiling by --package"):default("views,widgets"):convert(to_array)
 end
 do
   local _with_0 = parser:command("generate_spec", "Scan widgets and generate specification for compiling bundles")
-  _with_0:option("--widget-dirs"):default("views,widgets"):convert(function(str)
-    local _accum_0 = { }
-    local _len_0 = 1
-    for d in str:gmatch("[^,]+") do
-      _accum_0[_len_0] = trim(d)
-      _len_0 = _len_0 + 1
-    end
-    return _accum_0
-  end)
+  _with_0:option("--widget-dirs", "Paths where widgets are located"):default("views,widgets"):convert(to_array)
   _with_0:option("--format", "Output fromat for generated asset spec file"):choices({
     "json",
     "tup"

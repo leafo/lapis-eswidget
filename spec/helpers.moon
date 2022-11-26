@@ -3,6 +3,11 @@ sorted_pairs = (sort=table.sort) ->
   import before_each, after_each from require "busted"
   local _pairs
   before_each ->
+    -- clear out any loded lapis modules to ensure clean slate
+    for mod_name in pairs package.loaded
+      if mod_name == "lapis" or mod_name\match "^lapis%."
+        package.loaded[mod_name] = nil
+
     _pairs = _G.pairs
     _G.pairs = (object, ...) ->
       keys = [k for k in _pairs object]

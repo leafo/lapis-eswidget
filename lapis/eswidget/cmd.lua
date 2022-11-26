@@ -122,29 +122,34 @@ _M.run = function(args)
   end
   local _exp_0 = args.command
   if "compile_js" == _exp_0 then
+    local is_widget = subclass_of(require("lapis.eswidget"))
+    local invalid_module_error = "You attempted to compile a module that doesn't extend `lapis.eswidget`. Only ESWidget is supported for compiling to JavaScript"
     if args.file then
       local widget = require(path_to_module(args.file))
+      assert(is_widget(widget), invalid_module_error)
       return print(widget:compile_es_module())
     elseif args.module then
       local widget = require(args.module)
+      assert(is_widget(widget), invalid_module_error)
       return print(widget:compile_es_module())
-    else
+    elseif args.package then
       local count = 0
+      local trim
+      trim = require("lapis.util").trim
       for _des_0 in each_widget() do
         local _continue_0 = false
         repeat
           local file, widget
           file, widget = _des_0.file, _des_0.widget
-          if args.package then
-            if not (types.array_contains(args.package)(widget.asset_packages)) then
-              _continue_0 = true
-              break
-            end
+          if not (types.array_contains(args.package)(widget.asset_packages)) then
+            _continue_0 = true
+            break
           end
           local js_code = assert(widget:compile_es_module())
           count = count + 1
           print("// " .. tostring(file) .. " (" .. tostring(table.concat(widget.asset_packages, ", ")) .. ")")
-          print(js_code)
+          print(trim(js_code))
+          print()
           _continue_0 = true
         until true
         if not _continue_0 then
@@ -152,8 +157,10 @@ _M.run = function(args)
         end
       end
       if count == 0 then
-        return error("No package files (package: " .. tostring(args.package) .. ")")
+        return error("You attempted to compile a package that has no matching widgets, aborting (package: " .. tostring(args.package) .. ")")
       end
+    else
+      return error("You called compile_js but did not specify what to compile. Provide one of: --file, --module, or --package")
     end
   elseif "generate_spec" == _exp_0 then
     local to_json
@@ -282,6 +289,8 @@ _M.run = function(args)
     print("ES module")
     print("==================")
     return print(Widget:compile_es_module())
+  else
+    return error("unhandled command: " .. tostring(args.command))
   end
 end
 return _M

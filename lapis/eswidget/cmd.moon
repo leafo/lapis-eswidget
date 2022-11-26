@@ -83,26 +83,34 @@ _M.run = (args) ->
 
   switch args.command
     when "compile_js"
+      is_widget = subclass_of require "lapis.eswidget"
+      invalid_module_error = "You attempted to compile a module that doesn't extend `lapis.eswidget`. Only ESWidget is supported for compiling to JavaScript"
+
       if args.file
         widget = require path_to_module args.file
+        assert is_widget(widget), invalid_module_error
         print widget\compile_es_module!
       elseif args.module
         widget = require args.module
+        assert is_widget(widget), invalid_module_error
         print widget\compile_es_module!
-      else
+      elseif args.package
         count = 0
+        import trim from require "lapis.util"
 
         for {:file, :widget} in each_widget!
-          if args.package
-            continue unless types.array_contains(args.package) widget.asset_packages
+          continue unless types.array_contains(args.package) widget.asset_packages
 
           js_code = assert widget\compile_es_module!
           count += 1
           print "// #{file} (#{table.concat widget.asset_packages, ", "})"
-          print js_code
+          print trim js_code
+          print!
 
         if count == 0
-          error "No package files (package: #{args.package})"
+          error "You attempted to compile a package that has no matching widgets, aborting (package: #{args.package})"
+      else
+        error "You called compile_js but did not specify what to compile. Provide one of: --file, --module, or --package"
 
     when "generate_spec"
       import to_json from require "lapis.util"
@@ -221,6 +229,8 @@ _M.run = (args) ->
       print "ES module"
       print "=================="
       print Widget\compile_es_module!
+    else
+      error "unhandled command: #{args.command}"
 
 
 _M

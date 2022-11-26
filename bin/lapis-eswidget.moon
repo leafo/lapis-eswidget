@@ -9,6 +9,8 @@ parser\command_target "command"
 
 parser\flag "--moonscript", "Enable MoonScript module loading"
 
+to_array = -> (str) -> [trim(d) for d in str\gmatch "[^,]+"]
+
 with parser\command "debug", "Show any extractable information about a widget module"
   \argument "module_name"
 
@@ -16,10 +18,10 @@ with parser\command "compile_js", "Compile the individual js_init function for a
   \option("--module")
   \option("--file")
   \option("--package")
+  \option("--widget-dirs", "Paths where widgets are located. Only used for compiling by --package")\default("views,widgets")\convert to_array
 
 with parser\command "generate_spec", "Scan widgets and generate specification for compiling bundles"
-  \option("--widget-dirs")\default("views,widgets")\convert (str) ->
-    [trim(d) for d in str\gmatch "[^,]+"]
+  \option("--widget-dirs", "Paths where widgets are located")\default("views,widgets")\convert to_array
 
   \option("--format", "Output fromat for generated asset spec file")\choices({"json", "tup"})\default "json"
 
