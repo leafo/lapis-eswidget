@@ -138,7 +138,6 @@ run = (args) ->
             print "ESBUILD=#{shell_quote args.esbuild_bin}"
 
           print!
-          -- declare macros
 
           -- relative path to move from args.source_dir to the top level directory
           -- eg static/js -> ../..
@@ -151,6 +150,8 @@ run = (args) ->
 
             args.source_dir\gsub("[^/]+", "..") -- this may not be very reliable, but should work in simple cases
 
+
+          -- declare macros used by individual file commands
           print "!compile_js = |> ^ compile_js %f > %o^ lapis-eswidget compile_js #{args.moonscript and "--moonscript" or ""} --file %f > %o |>"
           print [[!join_bundle = |> ^ join bundle %o^ (for file in %f; do echo 'import "]] .. join(source_to_top, "'$file'") .. [[";' | sed 's/\.js//'; done) > %o |>]]
           print "!esbuild_bundle = |> ^ esbuild bundle %o^ NODE_PATH=#{shell_quote args.source_dir} $(ESBUILD) --target=es6 --log-level=warning --bundle %f --outfile=%o |>"
@@ -171,10 +172,13 @@ run = (args) ->
             print!
             print "# package: #{package}"
             for file in *files
+              -- TODO: a single file can output to multiple packages, we should be able to handle that here
               out_file = file\gsub("%.#{search_extension}$", "") .. ".js"
               print ": #{file} | $(TOP)/<moon> |> !compile_js |> #{out_file} {package_#{package}}"
 
+            -- TODO: this intermediate file may be unecessary, we can consider piping the result directly into esbuild
             print ": {package_#{package}} |> !join_bundle |> #{shell_quote package_source_target package}"
+
             print ": #{package_source_target package} | {package_#{package}} $(TOP)/<coffee> |> !esbuild_bundle |> #{shell_quote package_output_target package} {packages}"
 
           print!
