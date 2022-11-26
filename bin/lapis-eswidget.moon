@@ -3,6 +3,8 @@ argparse = require "argparse"
 
 import types from require "tableshape"
 
+import trim from require "lapis.util"
+
 import subclass_of from require "tableshape.moonscript"
 
 parser = argparse "widget_helper.moon",
@@ -21,13 +23,22 @@ with parser\command "compile_js", "Compile the individual js_init function for a
   \option("--package")
 
 with parser\command "generate_spec", "Scan widgets and generate specification for compiling bundles"
+  \option("--widget-dirs")\default("views,widgets")\convert (str) ->
+    [trim(d) for d in str\gmatch "[^,]+"]
+
   \option("--format", "Output format for scan results")\choices({"json", "tup"})\default "json"
 
 args = parser\parse [v for _, v in ipairs _G.arg]
 
+search_extension = "lua"
+
+if args.moonscript
+  search_extension = "moon"
+  require "moonscript"
+
 -- eg. widgets/community/post_list.moon --> widgets.community.post_list
 path_to_module = (path) ->
-  (path\gsub("%.moon$", "")\gsub("/+", "."))
+  (path\gsub("%.#{search_extension}$", "")\gsub("/+", "."))
 
 each_moon_file = do
   scan_prefix = (...) ->
@@ -49,7 +60,7 @@ each_moon_file = do
         if attr.mode == "directory"
           table.insert subdirs, full_path
         else
-          if full_path\match "%.moon$"
+          if full_path\match "%.#{search_extension}$"
             coroutine.yield full_path
 
       scan_prefix unpack subdirs
@@ -58,19 +69,23 @@ each_moon_file = do
     prefixes = {...}
     coroutine.wrap -> scan_prefix unpack prefixes
 
+
+print_warning = (msg) ->
+  io.stderr\write msg
+  io.stderr\write "\n"
+
 each_widget = ->
   coroutine.wrap ->
-    import Widget from require "lapis.html"
-    is_widget = subclass_of Widget
+    is_widget = subclass_of require "lapis.eswidget"
 
-    for file in each_moon_file "views", "widgets"
+    for file in each_moon_file unpack args.widget_dirs
       module_name = path_to_module file
       widget = require module_name
       continue unless is_widget widget
 
-      continue unless widget.asset_packages
-      continue unless widget.compile_js_init
-      continue unless rawget widget, "js_init"
+      unless widget.asset_packages
+        print_warning "Widget without @asset_packages"
+        continue
 
       coroutine.yield {
         :file
@@ -110,9 +125,13 @@ switch args.command
         asset_spec = {}
 
         for {:module_name, :widget} in each_widget!
-          for package in *widget.asset_packages
-            asset_spec[package] or= {}
-            table.insert asset_spec[package], module_name
+          if next widget.asset_packages
+            for package in *widget.asset_packages
+              asset_spec[package] or= {}
+              table.insert asset_spec[package], module_name
+          else
+            asset_spec._unassigned or= {}
+            table.insert asset_spec._unassigned, module_name
 
         print to_json asset_spec
 
