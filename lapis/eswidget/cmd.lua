@@ -230,6 +230,17 @@ run = function(args)
         end
         return join(args.output_dir, tostring(package) .. tostring(suffix))
       end
+      local appended_group
+      appended_group = function(group_setting, prefix)
+        if prefix == nil then
+          prefix = ""
+        end
+        if group_setting and group_setting ~= "" then
+          return tostring(prefix) .. tostring(group_setting)
+        else
+          return ""
+        end
+      end
       for _index_0 = 1, #packages do
         local package = packages[_index_0]
         local files = package_files[package]
@@ -239,10 +250,10 @@ run = function(args)
         for _index_1 = 1, #files do
           local file = files[_index_1]
           local out_file = file:gsub("%." .. tostring(search_extension) .. "$", "") .. ".js"
-          print(": " .. tostring(file) .. " | $(TOP)/<moon> |> !compile_js |> " .. tostring(out_file) .. " {package_" .. tostring(package) .. "}")
+          print(": " .. tostring(file) .. tostring(appended_group(args.tup_compile_dep_group, " | ")) .. " |> !compile_js |> " .. tostring(out_file) .. " {package_" .. tostring(package) .. "}")
         end
         print(": {package_" .. tostring(package) .. "} |> !join_bundle |> " .. tostring(shell_quote(package_source_target(package))))
-        print(": " .. tostring(package_source_target(package)) .. " | {package_" .. tostring(package) .. "} $(TOP)/<coffee> |> !esbuild_bundle |> " .. tostring(shell_quote(package_output_target(package))) .. " {packages}")
+        print(": " .. tostring(package_source_target(package)) .. " | {package_" .. tostring(package) .. "}" .. tostring(appended_group(args.tup_bundle_dep_group, " ")) .. " |> !esbuild_bundle |> " .. tostring(shell_quote(package_output_target(package))) .. " {packages}")
       end
       print()
       print("# minifying packages")

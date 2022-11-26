@@ -165,6 +165,12 @@ run = (args) ->
           package_output_target = (package, suffix=".js") ->
             join args.output_dir, "#{package}#{suffix}"
 
+          appended_group = (group_setting, prefix="") ->
+            if group_setting and group_setting != ""
+              "#{prefix}#{group_setting}"
+            else
+              ""
+
           for package in *packages
             files = package_files[package]
             table.sort files
@@ -174,12 +180,12 @@ run = (args) ->
             for file in *files
               -- TODO: a single file can output to multiple packages, we should be able to handle that here
               out_file = file\gsub("%.#{search_extension}$", "") .. ".js"
-              print ": #{file} | $(TOP)/<moon> |> !compile_js |> #{out_file} {package_#{package}}"
+              print ": #{file}#{appended_group args.tup_compile_dep_group, " | "} |> !compile_js |> #{out_file} {package_#{package}}"
 
             -- TODO: this intermediate file may be unecessary, we can consider piping the result directly into esbuild
             print ": {package_#{package}} |> !join_bundle |> #{shell_quote package_source_target package}"
 
-            print ": #{package_source_target package} | {package_#{package}} $(TOP)/<coffee> |> !esbuild_bundle |> #{shell_quote package_output_target package} {packages}"
+            print ": #{package_source_target package} | {package_#{package}}#{appended_group args.tup_bundle_dep_group, " "} |> !esbuild_bundle |> #{shell_quote package_output_target package} {packages}"
 
           print!
           print "# minifying packages"

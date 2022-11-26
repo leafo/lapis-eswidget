@@ -21,11 +21,15 @@ with parser\command "generate_spec", "Scan widgets and generate specification fo
   \option("--widget-dirs")\default("views,widgets")\convert (str) ->
     [trim(d) for d in str\gmatch "[^,]+"]
 
-  \option("--format", "Output format for scan results")\choices({"json", "tup"})\default "json"
+  \option("--format", "Output fromat for generated asset spec file")\choices({"json", "tup"})\default "json"
 
   \option("--source-dir", "The working directory for source files (Will be set to NODE_PATH for build)")\default "static/js"
   \option("--output-dir", "Destination of final compiled asset packages")\default "static"
-  \option("--esbuild-bin", "Set the path to the esbuild binary. When empty, will search for ESBUILD tup environment variable")
+  \option("--esbuild-bin", "Set the path to the esbuild binary. When empty, will use the ESBUILD tup environment variable")
+
+  -- these are the tup order-only dependency groups for various stages of building
+  \option("--tup-compile-dep-group", "Dependency group used during the widget -> js compile phase (eg. $(TOP)/<moon>)")
+  \option("--tup-bundle-dep-group", "Dependency group used during esbuild bundling phase (eg. $(TOP)/<coffee>)")
 
 args = parser\parse [v for _, v in ipairs _G.arg]
 

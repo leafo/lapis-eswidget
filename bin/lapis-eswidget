@@ -26,13 +26,15 @@ do
     end
     return _accum_0
   end)
-  _with_0:option("--format", "Output format for scan results"):choices({
+  _with_0:option("--format", "Output fromat for generated asset spec file"):choices({
     "json",
     "tup"
   }):default("json")
   _with_0:option("--source-dir", "The working directory for source files (Will be set to NODE_PATH for build)"):default("static/js")
   _with_0:option("--output-dir", "Destination of final compiled asset packages"):default("static")
-  _with_0:option("--esbuild-bin", "Set the path to the esbuild binary. When empty, will search for ESBUILD tup environment variable")
+  _with_0:option("--esbuild-bin", "Set the path to the esbuild binary. When empty, will use the ESBUILD tup environment variable")
+  _with_0:option("--tup-compile-dep-group", "Dependency group used during the widget -> js compile phase (eg. $(TOP)/<moon>)")
+  _with_0:option("--tup-bundle-dep-group", "Dependency group used during esbuild bundling phase (eg. $(TOP)/<coffee>)")
 end
 local args = parser:parse((function()
   local _accum_0 = { }
