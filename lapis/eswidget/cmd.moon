@@ -3,6 +3,15 @@ import subclass_of from require "tableshape.moonscript"
 
 import shell_escape, join from require "lapis.cmd.path"
 
+-- we reference the module so we can overwrite these methods when running in
+-- test suite
+_M = {
+  print: print
+  print_warning: (msg) ->
+    io.stderr\write msg
+    io.stderr\write "\n"
+}
+
 -- quote shell escapes str if necessary
 shell_quote = (str) ->
   if str\match "'"
@@ -10,12 +19,9 @@ shell_quote = (str) ->
   else
     str
 
-print_warning = (msg) ->
-  io.stderr\write msg
-  io.stderr\write "\n"
-
 -- args should come from parsed argparse result
-run = (args) ->
+_M.run = (args) ->
+  print = (...) -> _M.print ...
   search_extension = "lua"
 
   if args.moonscript
@@ -66,7 +72,7 @@ run = (args) ->
         continue unless is_widget widget
 
         unless widget.asset_packages
-          print_warning "Widget without @asset_packages"
+          _M.print_warning "Widget without @asset_packages"
           continue
 
         coroutine.yield {
@@ -216,9 +222,6 @@ run = (args) ->
       print "=================="
       print Widget\compile_es_module!
 
-      -- print "Example invocation"
-      -- print "=================="
-      -- print Widget!\js_init { color: "blue" }
 
+_M
 
-{:run}

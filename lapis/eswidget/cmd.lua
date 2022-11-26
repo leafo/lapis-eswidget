@@ -7,6 +7,13 @@ do
   local _obj_0 = require("lapis.cmd.path")
   shell_escape, join = _obj_0.shell_escape, _obj_0.join
 end
+local _M = {
+  print = print,
+  print_warning = function(msg)
+    io.stderr:write(msg)
+    return io.stderr:write("\n")
+  end
+}
 local shell_quote
 shell_quote = function(str)
   if str:match("'") then
@@ -15,13 +22,11 @@ shell_quote = function(str)
     return str
   end
 end
-local print_warning
-print_warning = function(msg)
-  io.stderr:write(msg)
-  return io.stderr:write("\n")
-end
-local run
-run = function(args)
+_M.run = function(args)
+  local print
+  print = function(...)
+    return _M.print(...)
+  end
   local search_extension = "lua"
   if args.moonscript then
     search_extension = "moon"
@@ -98,7 +103,7 @@ run = function(args)
             break
           end
           if not (widget.asset_packages) then
-            print_warning("Widget without @asset_packages")
+            _M.print_warning("Widget without @asset_packages")
             _continue_0 = true
             break
           end
@@ -279,6 +284,4 @@ run = function(args)
     return print(Widget:compile_es_module())
   end
 end
-return {
-  run = run
-}
+return _M
