@@ -6,16 +6,14 @@ local parser = argparse("widget_helper.moon", "Widget asset compilation and buil
 parser:command_target("command")
 parser:flag("--moonscript", "Enable MoonScript module loading")
 local to_array
-to_array = function()
-  return function(str)
-    local _accum_0 = { }
-    local _len_0 = 1
-    for d in str:gmatch("[^,]+") do
-      _accum_0[_len_0] = trim(d)
-      _len_0 = _len_0 + 1
-    end
-    return _accum_0
+to_array = function(str)
+  local _accum_0 = { }
+  local _len_0 = 1
+  for d in str:gmatch("[^,]+") do
+    _accum_0[_len_0] = trim(d)
+    _len_0 = _len_0 + 1
   end
+  return _accum_0
 end
 do
   local _with_0 = parser:command("debug", "Show any extractable information about a widget module")

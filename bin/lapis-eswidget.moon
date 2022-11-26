@@ -9,7 +9,7 @@ parser\command_target "command"
 
 parser\flag "--moonscript", "Enable MoonScript module loading"
 
-to_array = -> (str) -> [trim(d) for d in str\gmatch "[^,]+"]
+to_array = (str) -> [trim(d) for d in str\gmatch "[^,]+"]
 
 with parser\command "debug", "Show any extractable information about a widget module"
   \argument "module_name"

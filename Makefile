@@ -1,6 +1,6 @@
 BIN=lapis-eswidget
 
-.PHONY: build install
+.PHONY: build install compile_package
 
 build:
 	moonc lapis
@@ -14,3 +14,6 @@ local: build
 
 assetspec.tup::
 	moon bin/lapis-eswidget.moon generate_spec --widget-dirs=spec/views --moonscript --format=tup > assetspec.tup
+
+compile_main::
+	moon bin/lapis-eswidget.moon compile_js --widget-dirs=spec/views --moonscript --package main
