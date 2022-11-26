@@ -2,6 +2,11 @@ local types
 types = require("tableshape").types
 local subclass_of
 subclass_of = require("tableshape.moonscript").subclass_of
+local print_warning
+print_warning = function(msg)
+  io.stderr:write(msg)
+  return io.stderr:write("\n")
+end
 local run
 run = function(args)
   local search_extension = "lua"
@@ -13,7 +18,7 @@ run = function(args)
   path_to_module = function(path)
     return (path:gsub("%." .. tostring(search_extension) .. "$", ""):gsub("/+", "."))
   end
-  local each_moon_file
+  local each_module_file
   do
     local scan_prefix
     scan_prefix = function(...)
@@ -57,7 +62,7 @@ run = function(args)
         scan_prefix(unpack(subdirs))
       end
     end
-    each_moon_file = function(...)
+    each_module_file = function(...)
       local prefixes = {
         ...
       }
@@ -66,16 +71,11 @@ run = function(args)
       end)
     end
   end
-  local print_warning
-  print_warning = function(msg)
-    io.stderr:write(msg)
-    return io.stderr:write("\n")
-  end
   local each_widget
   each_widget = function()
     return coroutine.wrap(function()
       local is_widget = subclass_of(require("lapis.eswidget"))
-      for file in each_moon_file(unpack(args.widget_dirs)) do
+      for file in each_module_file(unpack(args.widget_dirs)) do
         local _continue_0 = false
         repeat
           local module_name = path_to_module(file)
@@ -215,19 +215,18 @@ run = function(args)
       end
     end
   elseif "debug" == _exp_0 then
-    require("moon").p(args)
     local Widget = require(args.module_name)
     print("Config")
     print("==================")
+    print("widget name", Widget:widget_name())
     print("packages:", table.concat(Widget.asset_packages, ", "))
-    print("init method:", Widget:js_init_method_name())
+    print("init method:", Widget:es_module_init_function_name())
+    print("class names:", table.concat({
+      Widget:widget_class_list()
+    }, ", "))
     print()
-    print("Asset files")
-    print("==================")
-    print("scss:", Widget:get_asset_file("scss"))
-    print("coffee:", Widget:get_asset_file("coffee"))
     print()
-    print("JS Init")
+    print("ES module")
     print("==================")
     return print(Widget:compile_es_module())
   end

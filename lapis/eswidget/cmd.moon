@@ -1,6 +1,10 @@
 import types from require "tableshape"
 import subclass_of from require "tableshape.moonscript"
 
+print_warning = (msg) ->
+  io.stderr\write msg
+  io.stderr\write "\n"
+
 -- args should come from parsed argparse result
 run = (args) ->
   search_extension = "lua"
@@ -13,7 +17,7 @@ run = (args) ->
   path_to_module = (path) ->
     (path\gsub("%.#{search_extension}$", "")\gsub("/+", "."))
 
-  each_moon_file = do
+  each_module_file = do
     scan_prefix = (...) ->
       prefixes = {...}
 
@@ -43,15 +47,11 @@ run = (args) ->
       coroutine.wrap -> scan_prefix unpack prefixes
 
 
-  print_warning = (msg) ->
-    io.stderr\write msg
-    io.stderr\write "\n"
-
   each_widget = ->
     coroutine.wrap ->
       is_widget = subclass_of require "lapis.eswidget"
 
-      for file in each_moon_file unpack args.widget_dirs
+      for file in each_module_file unpack args.widget_dirs
         module_name = path_to_module file
         widget = require module_name
         continue unless is_widget widget
@@ -65,7 +65,6 @@ run = (args) ->
           module_name: path_to_module file
           :widget
         }
-
 
   switch args.command
     when "compile_js"
@@ -158,25 +157,26 @@ run = (args) ->
             print ": static/coffee/#{package}.js | {packages} |> !esbuild_bundle_minified |> static/#{package}.min.js"
 
     when "debug"
-      require("moon").p args
-
       Widget = require args.module_name
 
       print "Config"
       print "=================="
+      print "widget name", Widget\widget_name!
       print "packages:", table.concat Widget.asset_packages, ", "
-      print "init method:", Widget\js_init_method_name!
+      print "init method:", Widget\es_module_init_function_name!
+      print "class names:", table.concat { Widget\widget_class_list!}, ", "
 
       print!
 
-      print "Asset files"
-      print "=================="
-      print "scss:", Widget\get_asset_file "scss"
-      print "coffee:", Widget\get_asset_file "coffee"
+      -- TODO: do we want this?
+      -- print "Asset files"
+      -- print "=================="
+      -- print "scss:", Widget\get_asset_file "scss"
+      -- print "coffee:", Widget\get_asset_file "coffee"
 
       print!
 
-      print "JS Init"
+      print "ES module"
       print "=================="
       print Widget\compile_es_module!
 
