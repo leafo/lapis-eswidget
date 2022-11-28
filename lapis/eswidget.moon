@@ -22,6 +22,7 @@ convert_prop_types = (cls, tbl) ->
 
 class ESWidget extends Widget
   widget_enclosing_element: "div"
+
   @widget_name: => underscore @__name or "some_widget"
   @widget_class_name: => "#{@widget_name!}_widget"
 
@@ -107,28 +108,26 @@ class ESWidget extends Widget
 
     "#{method_name}(#{@widget_selector!}, #{to_json widget_params});"
 
+  widget_enclosing_attributes: =>
+    {
+      id: @widget_id!
+      class: { @@widget_class_list! }
+    }
+
+  -- NOTE: load order: this will cause inner items to run their js_init before outer elements
+  -- this is different than how I've previously done it, where outer runs before inner
   content: (fn=@inner_content) =>
-    classes = { @@widget_class_list! }
+    element @widget_enclosing_element or "div", @widget_enclosing_attributes!, -> fn @
 
-    local inner
-    el_opts = { id: @widget_id!, class: classes, -> raw inner }
-
-    append_js = if js = @js_init!
+    if js = @js_init!
       if @layout_opts
         @content_for "js_init", ->
           raw js
           unless js\match ";%s*$"
             raw ";"
-        nil
       else
-        js
-
-    inner = capture -> fn @
-    element @widget_enclosing_element or "div", el_opts
-
-    if append_js
-      script type: "text/javascript", ->
-        raw append_js
+        script type: "text/javascript", ->
+          raw js
 
 
   inner_content: =>

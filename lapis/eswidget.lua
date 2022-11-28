@@ -56,48 +56,39 @@ do
       end
       return tostring(method_name) .. "(" .. tostring(self:widget_selector()) .. ", " .. tostring(to_json(widget_params)) .. ");"
     end,
+    widget_enclosing_attributes = function(self)
+      return {
+        id = self:widget_id(),
+        class = {
+          self.__class:widget_class_list()
+        }
+      }
+    end,
     content = function(self, fn)
       if fn == nil then
         fn = self.inner_content
       end
-      local classes = {
-        self.__class:widget_class_list()
-      }
-      local inner
-      local el_opts = {
-        id = self:widget_id(),
-        class = classes,
-        function()
-          return raw(inner)
-        end
-      }
-      local append_js
+      element(self.widget_enclosing_element or "div", self:widget_enclosing_attributes(), function()
+        return fn(self)
+      end)
       do
         local js = self:js_init()
         if js then
           if self.layout_opts then
-            self:content_for("js_init", function()
+            return self:content_for("js_init", function()
               raw(js)
               if not (js:match(";%s*$")) then
                 return raw(";")
               end
             end)
-            append_js = nil
           else
-            append_js = js
+            return script({
+              type = "text/javascript"
+            }, function()
+              return raw(js)
+            end)
           end
         end
-      end
-      inner = capture(function()
-        return fn(self)
-      end)
-      element(self.widget_enclosing_element or "div", el_opts)
-      if append_js then
-        return script({
-          type = "text/javascript"
-        }, function()
-          return raw(append_js)
-        end)
       end
     end,
     inner_content = function(self) end

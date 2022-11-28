@@ -310,8 +310,8 @@ describe "eswidget", ->
       assert.same [[<div class="user_profile_widget" id="user_profile_1"><div class="inner_thing_widget" id="inner_thing_2"></div></div>]], widget\render_to_string!
       assert.same {
         _content_for_js_init: {
-          [[init_UserProfile('#user_profile_1', null);]]
           [[init_InnerThing('#inner_thing_2', {"items":[1,2,3]});]]
+          [[init_UserProfile('#user_profile_1', null);]]
         }
       }, layout_opts
 
