@@ -3,6 +3,8 @@ import sorted_pairs from require "spec.helpers"
 -- NOTE: only require lapis modules within tests or before, as sorted_pairs
 -- will reset the scope for clean slate every test
 
+import types from require "tableshape"
+
 describe "eswidget.cmd", ->
   local snapshot
 
@@ -177,6 +179,28 @@ ESBUILD=ezbuild
 # minifying packages
 : spec/static/js/main.js | {packages} |> !esbuild_bundle_minified |> spec/static/main.min.js
 ]], get_output!
+
+    it "generates json", ->
+      import run from require "lapis.eswidget.cmd"
+      run {
+        command: "generate_spec"
+        format: "json"
+        moonscript: true
+        widget_dirs: {"spec/views"}
+        source_dir: "spec/static/js"
+        output_dir: "spec/static"
+      }
+
+      import from_json from require "lapis.util"
+
+      assert_result = types.assert types.shape {
+        packages: types.shape {
+          main: types.table
+        }
+        widgets: types.table
+      }
+
+      assert_result from_json get_output!
 
 describe "eswidget", ->
   sorted_pairs!
