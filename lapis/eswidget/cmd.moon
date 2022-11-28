@@ -257,17 +257,19 @@ _M.run = (args) ->
             -- TODO: this intermediate file may be unecessary, we can consider piping the result directly into esbuild
             print ": #{package_dependencies package} |> !join_bundle |> #{shell_quote package_source_target package}"
 
-            if args.minify == "only"
-              print ": #{package_source_target package} | #{package_dependencies package, args.tup_bundle_dep_group} |> !esbuild_bundle_minified |> #{shell_quote package_output_target package, ".min.js"}"
-            else
-              print ": #{package_source_target package} | #{package_dependencies package, args.tup_bundle_dep_group} |> !esbuild_bundle |> #{shell_quote package_output_target package} {packages}"
+            package_inputs = "#{shell_quote package_source_target package}#{appended_group args.tup_bundle_dep_group, " | "}"
 
-          -- if both minified and regular bundles are created, then do minifucation as separate setp
+            if args.minify == "only"
+              print ": #{package_inputs} |> !esbuild_bundle_minified |> #{shell_quote package_output_target package, ".min.js"}"
+            else
+              print ": #{package_inputs} |> !esbuild_bundle |> #{shell_quote package_output_target package} {packages}"
+
+          -- if both minified and regular bundles are created, then do minifucation as separate step
           if args.minify == "both"
             print!
             print "# minifying packages"
             for package in *packages
-              print ": #{package_source_target package} | {packages} |> !esbuild_bundle_minified |> #{shell_quote package_output_target package, ".min.js"}"
+              print ": #{shell_quote package_source_target package} | {packages} |> !esbuild_bundle_minified |> #{shell_quote package_output_target package, ".min.js"}"
 
         when "makefile"
           print "ESBUILD=#{shell_quote args.esbuild_bin or "esbuild"}"

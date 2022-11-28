@@ -13,11 +13,11 @@ export LUA_CPATH
 
 # package: main
 : {package_main} spec/views/user/settings.js |> !join_bundle |> spec/static/js/main.js
-: spec/static/js/main.js | {package_main} spec/views/user/settings.js |> !esbuild_bundle |> spec/static/main.js {packages}
+: spec/static/js/main.js |> !esbuild_bundle |> spec/static/main.js {packages}
 
 # package: settings
 : spec/views/user/settings.js |> !join_bundle |> spec/static/js/settings.js
-: spec/static/js/settings.js | spec/views/user/settings.js |> !esbuild_bundle |> spec/static/settings.js {packages}
+: spec/static/js/settings.js |> !esbuild_bundle |> spec/static/settings.js {packages}
 
 # minifying packages
 : spec/static/js/main.js | {packages} |> !esbuild_bundle_minified |> spec/static/main.min.js

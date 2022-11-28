@@ -328,10 +328,11 @@ _M.run = function(args)
         print()
         print("# package: " .. tostring(package))
         print(": " .. tostring(package_dependencies(package)) .. " |> !join_bundle |> " .. tostring(shell_quote(package_source_target(package))))
+        local package_inputs = tostring(shell_quote(package_source_target(package))) .. tostring(appended_group(args.tup_bundle_dep_group, " | "))
         if args.minify == "only" then
-          print(": " .. tostring(package_source_target(package)) .. " | " .. tostring(package_dependencies(package, args.tup_bundle_dep_group)) .. " |> !esbuild_bundle_minified |> " .. tostring(shell_quote(package_output_target(package, ".min.js"))))
+          print(": " .. tostring(package_inputs) .. " |> !esbuild_bundle_minified |> " .. tostring(shell_quote(package_output_target(package, ".min.js"))))
         else
-          print(": " .. tostring(package_source_target(package)) .. " | " .. tostring(package_dependencies(package, args.tup_bundle_dep_group)) .. " |> !esbuild_bundle |> " .. tostring(shell_quote(package_output_target(package))) .. " {packages}")
+          print(": " .. tostring(package_inputs) .. " |> !esbuild_bundle |> " .. tostring(shell_quote(package_output_target(package))) .. " {packages}")
         end
       end
       if args.minify == "both" then
@@ -339,7 +340,7 @@ _M.run = function(args)
         print("# minifying packages")
         for _index_0 = 1, #packages do
           local package = packages[_index_0]
-          print(": " .. tostring(package_source_target(package)) .. " | {packages} |> !esbuild_bundle_minified |> " .. tostring(shell_quote(package_output_target(package, ".min.js"))))
+          print(": " .. tostring(shell_quote(package_source_target(package))) .. " | {packages} |> !esbuild_bundle_minified |> " .. tostring(shell_quote(package_output_target(package, ".min.js"))))
         end
       end
     elseif "makefile" == _exp_1 then
