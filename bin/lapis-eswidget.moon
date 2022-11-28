@@ -28,7 +28,7 @@ with parser\command "generate_spec", "Scan widgets and generate specification fo
   \flag("--sourcemap", "Enable sourcemap for bundled outputs")
   \option("--css-packages", "Instruct build that css files will be generated for listed packages")\convert to_array
 
-  \option("--source-dir", "The working directory for source files (Will be set to NODE_PATH for build)")\default "static/js"
+  \option("--source-dir", "The working directory for source files (NODE_PATH will be set to this during bundle)")\default "static/js"
   \option("--output-dir", "Destination of final compiled asset packages")\default "static"
   \option("--esbuild-bin", "Set the path to the esbuild binary. When empty, will use the ESBUILD tup environment variable")
 
