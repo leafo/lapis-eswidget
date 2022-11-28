@@ -99,6 +99,28 @@ Any widgets you wish to be supported by this library must extend from
 ESWidget = require "lapis.eswidget"
 ```
 
+
+### Inerface
+
+Class
+
+* `@asset_packages` (array table, default: `{}`) - The packages that this widget's assets will be placed into
+* `@widget_name` (function) - Returns a name for the widget used for class names and file names (eg. MyWidget -> my_widget)
+* `@widget_class_name` (function) - Returns the CSS class name of this widget as a string
+* `@widget_class_list` (function) - Return variable number of arguments for the list of CSS classes this widget will have when rendered, calculated from the inheritance chain
+* `@compile_es_module` (function) - Compile the static `es_module` initialization code for the widget
+
+Instance
+
+* `widget_id` (function) - Returns a string with a unique ID for the widget, of the format `{widget_name}_{random_number}`
+* `widget_selector` (function) - Returns a snippet of JavaScript that can be used to uniquely identify the element on the page
+* `widget_enclosing_element` (string, default: `"div"`)
+* `widget_enclosing_attributes` (function)
+* `js_init(params)` (function) - Returns JavaScript code that will be embedded with `raw` to initialize the widget on the page
+* `content` (function)
+* `inner_content` (function, default: empty function) - The render function of the widget called inside of the enclosing element
+
+
 ### Static vs Instance code
 
 There are two kinds of data assoaciated with each widget during it's render
