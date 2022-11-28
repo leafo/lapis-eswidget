@@ -380,14 +380,27 @@ _M.run = function(args)
         print("", "lapis-eswidget compile_js " .. tostring(args.moonscript and "--moonscript" or "") .. " --file \"$<\" > \"$@\"")
         print()
       end
-      print("# Building packages")
-      for package, files in pairs(package_files) do
+      local packages
+      do
+        local _accum_0 = { }
+        local _len_0 = 1
+        for k in pairs(package_files) do
+          _accum_0[_len_0] = k
+          _len_0 = _len_0 + 1
+        end
+        packages = _accum_0
+      end
+      table.sort(packages)
+      for _index_0 = 1, #packages do
+        local package = packages[_index_0]
+        local files = package_files[package]
+        print("# Building package: " .. tostring(package))
         local package_dependencies
         do
           local _accum_0 = { }
           local _len_0 = 1
-          for _index_0 = 1, #files do
-            local file = files[_index_0]
+          for _index_1 = 1, #files do
+            local file = files[_index_1]
             _accum_0[_len_0] = input_to_output(file)
             _len_0 = _len_0 + 1
           end

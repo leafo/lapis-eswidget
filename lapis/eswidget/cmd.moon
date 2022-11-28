@@ -293,8 +293,13 @@ _M.run = (args) ->
             print "", "lapis-eswidget compile_js #{args.moonscript and "--moonscript" or ""} --file \"$<\" > \"$@\""
             print!
 
-          print "# Building packages"
-          for package, files  in pairs package_files
+
+          packages = [k for k in pairs package_files]
+          table.sort packages
+
+          for package in *packages
+            files = package_files[package]
+            print "# Building package: #{package}"
             package_dependencies = [input_to_output file for file in *files]
             print "#{append_output package_source_target package}: #{table.concat package_dependencies, " "}"
             print "", "mkdir -p \"#{args.source_dir}\""
