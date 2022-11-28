@@ -48,9 +48,17 @@ The following commands are included
 
 ### `compile_js`
 
+```
+lapis-eswidget compile_js --help
+```
+
 Compile a single module or entire package to JavaScript
 
 ### `generate_spec`
+
+```
+lapis-eswidget generate_spec --help
+```
 
 Scan directories for widgets that extend from `ESWidget` and generate a
 specification for compiling bundles.
@@ -59,9 +67,21 @@ Supports the following output formats: `json`, `tup`, `makefile`
 
 ### `debug`
 
+```
+lapis-eswidget debug --help
+```
+
 Display information about a single widget
 
 ## `ESWidget` base class
+
+Any widgets you wish to be supported by this library must extend from
+`ESWidget`.
+
+
+```moonscript
+ESWidget = require "lapis.eswidget"
+```
 
 ### Static vs Instance code
 
