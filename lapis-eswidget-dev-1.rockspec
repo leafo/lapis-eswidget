@@ -23,6 +23,7 @@ build = {
     ["lapis.eswidget"] = "lapis/eswidget.lua",
     ["lapis.eswidget.cmd"] = "lapis/eswidget/cmd.lua",
     ["lapis.eswidget.render_flow"] = "lapis/eswidget/render_flow.lua",
+    ["lapis.eswidget.version"] = "lapis/eswidget/version.lua",
   },
   install = {
     bin = { "bin/lapis-eswidget" }
