@@ -19,8 +19,7 @@ spec/static/js/main.js: spec/views/login.js spec/views/user_profile.js spec/view
 	(for file in $^; do echo 'import "../../../'$$file'";' | sed 's/\.js//'; done) > "$@"
 
 spec/static/main.min.js: spec/static/js/main.js
-	mkdir -p spec/static
-	NODE_PATH=spec/static/js $(ESBUILD) --target=es6 --log-level=warning --bundle --sourcemap --minify $< --outfile=$@
+	NODE_PATH=spec/static/js $(ESBUILD) --target=es6 --log-level=warning --bundle --sourcemap --minify "$<" --outfile="$@"
 
 # Building package: settings
 spec/static/js/settings.js: spec/views/user/settings.js
@@ -28,8 +27,7 @@ spec/static/js/settings.js: spec/views/user/settings.js
 	(for file in $^; do echo 'import "../../../'$$file'";' | sed 's/\.js//'; done) > "$@"
 
 spec/static/settings.min.js: spec/static/js/settings.js
-	mkdir -p spec/static
-	NODE_PATH=spec/static/js $(ESBUILD) --target=es6 --log-level=warning --bundle --sourcemap --minify $< --outfile=$@
+	NODE_PATH=spec/static/js $(ESBUILD) --target=es6 --log-level=warning --bundle --sourcemap --minify "$<" --outfile="$@"
 
 # Misc rules
 clean:

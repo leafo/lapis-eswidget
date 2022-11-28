@@ -481,8 +481,7 @@ _M.run = function(args)
             end
           end
           print(tostring(bundle_target) .. ": " .. tostring(package_source_target(package)))
-          print("", "mkdir -p " .. tostring(shell_quote(args.output_dir)))
-          print("", "NODE_PATH=" .. tostring(shell_quote(args.source_dir)) .. " $(ESBUILD) " .. tostring(esbuild_args) .. " $< --outfile=$@")
+          print("", "NODE_PATH=" .. tostring(shell_quote(args.source_dir)) .. " $(ESBUILD) " .. tostring(esbuild_args) .. " \"$<\" --outfile=\"$@\"")
           print()
         end
         local _exp_3 = args.minify
@@ -498,8 +497,7 @@ _M.run = function(args)
             end
           end
           print(tostring(bundle_target) .. ": " .. tostring(package_source_target(package)))
-          print("", "mkdir -p " .. tostring(shell_quote(args.output_dir)))
-          print("", "NODE_PATH=" .. tostring(shell_quote(args.source_dir)) .. " $(ESBUILD) " .. tostring(esbuild_args) .. " --minify $< --outfile=$@")
+          print("", "NODE_PATH=" .. tostring(shell_quote(args.source_dir)) .. " $(ESBUILD) " .. tostring(esbuild_args) .. " --minify \"$<\" --outfile=\"$@\"")
           print()
         end
       end

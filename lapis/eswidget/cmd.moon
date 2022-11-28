@@ -313,7 +313,6 @@ _M.run = (args) ->
               package_files[package] or= {}
               table.insert package_files[package], file
 
-
           bundle_outputs = {}
 
           for package in pairs package_files
@@ -366,8 +365,7 @@ _M.run = (args) ->
                     append_output package_output_target package, ".css.map"
 
                 print "#{bundle_target}: #{package_source_target package}"
-                print "", "mkdir -p #{shell_quote args.output_dir}"
-                print "", "NODE_PATH=#{shell_quote args.source_dir} $(ESBUILD) #{esbuild_args} $< --outfile=$@"
+                print "", "NODE_PATH=#{shell_quote args.source_dir} $(ESBUILD) #{esbuild_args} \"$<\" --outfile=\"$@\""
                 print!
 
             -- minified output
@@ -385,8 +383,7 @@ _M.run = (args) ->
                     append_output package_output_target package, ".min.css.map"
 
                 print "#{bundle_target}: #{package_source_target package}"
-                print "", "mkdir -p #{shell_quote args.output_dir}"
-                print "", "NODE_PATH=#{shell_quote args.source_dir} $(ESBUILD) #{esbuild_args} --minify $< --outfile=$@"
+                print "", "NODE_PATH=#{shell_quote args.source_dir} $(ESBUILD) #{esbuild_args} --minify \"$<\" --outfile=\"$@\""
                 print!
 
           print "# Misc rules"
