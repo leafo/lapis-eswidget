@@ -299,7 +299,7 @@ _M.run = (args) ->
               print ": #{package_inputs} |> !esbuild_bundle |> #{output_with_extras package} {packages}"
 
           -- if both minified and regular bundles are created, then do minifucation as separate step
-          if args.minify == "both"
+          if args.minify == "both" and next packages
             print!
             print "# minifying packages"
             for package in *packages
@@ -334,11 +334,14 @@ _M.run = (args) ->
             out
 
           print "# Building modules"
+          unless next found_widgets
+            print "# Warning: No modules found"
+            print!
+
           for {:file, :module_name, :widget} in *found_widgets
             print "#{append_output input_to_output file}: #{file}"
             print "", "lapis-eswidget compile_js #{args.moonscript and "--moonscript" or ""} --file \"$<\" > \"$@\""
             print!
-
 
           packages = [k for k in pairs package_files]
           table.sort packages
@@ -392,7 +395,8 @@ _M.run = (args) ->
 
           print "# Misc rules"
           print "clean:"
-          print "", "rm #{table.concat [shell_quote(o) for o in *all_outputs], " "}"
+          if next all_outputs
+            print "", "rm #{table.concat [shell_quote(o) for o in *all_outputs], " "}"
 
 
     when "debug"

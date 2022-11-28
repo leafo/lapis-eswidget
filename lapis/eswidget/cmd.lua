@@ -381,7 +381,7 @@ _M.run = function(args)
           print(": " .. tostring(package_inputs) .. " |> !esbuild_bundle |> " .. tostring(output_with_extras(package)) .. " {packages}")
         end
       end
-      if args.minify == "both" then
+      if args.minify == "both" and next(packages) then
         print()
         print("# minifying packages")
         for _index_0 = 1, #packages do
@@ -431,6 +431,10 @@ _M.run = function(args)
         return out
       end
       print("# Building modules")
+      if not (next(found_widgets)) then
+        print("# Warning: No modules found")
+        print()
+      end
       for _index_0 = 1, #found_widgets do
         local _des_0 = found_widgets[_index_0]
         local file, module_name, widget
@@ -505,16 +509,18 @@ _M.run = function(args)
       end
       print("# Misc rules")
       print("clean:")
-      return print("", "rm " .. tostring(table.concat((function()
-        local _accum_0 = { }
-        local _len_0 = 1
-        for _index_0 = 1, #all_outputs do
-          local o = all_outputs[_index_0]
-          _accum_0[_len_0] = shell_quote(o)
-          _len_0 = _len_0 + 1
-        end
-        return _accum_0
-      end)(), " ")))
+      if next(all_outputs) then
+        return print("", "rm " .. tostring(table.concat((function()
+          local _accum_0 = { }
+          local _len_0 = 1
+          for _index_0 = 1, #all_outputs do
+            local o = all_outputs[_index_0]
+            _accum_0[_len_0] = shell_quote(o)
+            _len_0 = _len_0 + 1
+          end
+          return _accum_0
+        end)(), " ")))
+      end
     end
   elseif "debug" == _exp_0 then
     local Widget = require(args.module_name)
