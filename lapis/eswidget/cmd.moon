@@ -30,6 +30,10 @@ _M.run = (args) ->
     search_extension = "moon"
     require "moonscript"
 
+  is_valid_widget = subclass_of(require "lapis.eswidget") * types.partial {
+    es_module: types.string
+  }
+
   -- eg. widgets/community/post_list.moon --> widgets.community.post_list
   path_to_module = (path) ->
     (path\gsub("%.#{search_extension}$", "")\gsub("/+", "."))
@@ -66,12 +70,11 @@ _M.run = (args) ->
 
   each_widget = ->
     coroutine.wrap ->
-      is_widget = subclass_of require "lapis.eswidget"
 
       for file in each_module_file unpack args.widget_dirs
         module_name = path_to_module file
         widget = require module_name
-        continue unless is_widget widget
+        continue unless is_valid_widget widget
 
         unless widget.asset_packages
           _M.print_warning "Widget without @asset_packages"
@@ -85,16 +88,15 @@ _M.run = (args) ->
 
   switch args.command
     when "compile_js"
-      is_widget = subclass_of require "lapis.eswidget"
       invalid_module_error = "You attempted to compile a module that doesn't extend `lapis.eswidget`. Only ESWidget is supported for compiling to JavaScript"
 
       if args.file
         widget = require path_to_module args.file
-        assert is_widget(widget), invalid_module_error
+        assert is_valid_widget(widget), invalid_module_error
         print widget\compile_es_module!
       elseif args.module
         widget = require args.module
-        assert is_widget(widget), invalid_module_error
+        assert is_valid_widget(widget), invalid_module_error
         print widget\compile_es_module!
       elseif args.package
         count = 0

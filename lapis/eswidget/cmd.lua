@@ -33,6 +33,9 @@ _M.run = function(args)
     search_extension = "moon"
     require("moonscript")
   end
+  local is_valid_widget = subclass_of(require("lapis.eswidget")) * types.partial({
+    es_module = types.string
+  })
   local path_to_module
   path_to_module = function(path)
     return (path:gsub("%." .. tostring(search_extension) .. "$", ""):gsub("/+", "."))
@@ -93,13 +96,12 @@ _M.run = function(args)
   local each_widget
   each_widget = function()
     return coroutine.wrap(function()
-      local is_widget = subclass_of(require("lapis.eswidget"))
       for file in each_module_file(unpack(args.widget_dirs)) do
         local _continue_0 = false
         repeat
           local module_name = path_to_module(file)
           local widget = require(module_name)
-          if not (is_widget(widget)) then
+          if not (is_valid_widget(widget)) then
             _continue_0 = true
             break
           end
@@ -123,15 +125,14 @@ _M.run = function(args)
   end
   local _exp_0 = args.command
   if "compile_js" == _exp_0 then
-    local is_widget = subclass_of(require("lapis.eswidget"))
     local invalid_module_error = "You attempted to compile a module that doesn't extend `lapis.eswidget`. Only ESWidget is supported for compiling to JavaScript"
     if args.file then
       local widget = require(path_to_module(args.file))
-      assert(is_widget(widget), invalid_module_error)
+      assert(is_valid_widget(widget), invalid_module_error)
       return print(widget:compile_es_module())
     elseif args.module then
       local widget = require(args.module)
-      assert(is_widget(widget), invalid_module_error)
+      assert(is_valid_widget(widget), invalid_module_error)
       return print(widget:compile_es_module())
     elseif args.package then
       local count = 0
