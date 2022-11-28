@@ -241,8 +241,14 @@ _M.run = function(args)
       print()
       print("!compile_js = |> ^ compile_js %f > %o^ lapis-eswidget compile_js " .. tostring(args.moonscript and "--moonscript" or "") .. " --file %f > %o |>")
       print([[!join_bundle = |> ^ join bundle %o^ (for file in %f; do echo 'import "]] .. join(source_to_top, "'$file'") .. [[";' | sed 's/\.js//'; done) > %o |>]])
-      print("!esbuild_bundle = |> ^ esbuild bundle %o^ NODE_PATH=" .. tostring(shell_quote(args.source_dir)) .. " $(ESBUILD) --target=es6 --log-level=warning --bundle %f --outfile=%o |>")
-      print("!esbuild_bundle_minified = |> ^ esbuild minified bundle %o^ NODE_PATH=" .. tostring(shell_quote(args.source_dir)) .. " $(ESBUILD) --target=es6 --log-level=warning --minify --bundle %f --outfile=%o |>")
+      local _exp_2 = args.minify
+      if "both" == _exp_2 or "none" == _exp_2 then
+        print("!esbuild_bundle = |> ^ esbuild bundle %o^ NODE_PATH=" .. tostring(shell_quote(args.source_dir)) .. " $(ESBUILD) --target=es6 --log-level=warning --bundle %f --outfile=%o |>")
+      end
+      local _exp_3 = args.minify
+      if "both" == _exp_3 or "only" == _exp_3 then
+        print("!esbuild_bundle_minified = |> ^ esbuild minified bundle %o^ NODE_PATH=" .. tostring(shell_quote(args.source_dir)) .. " $(ESBUILD) --target=es6 --log-level=warning --minify --bundle %f --outfile=%o |>")
+      end
       print()
       local appended_group
       appended_group = function(group_setting, prefix)
@@ -322,13 +328,19 @@ _M.run = function(args)
         print()
         print("# package: " .. tostring(package))
         print(": " .. tostring(package_dependencies(package)) .. " |> !join_bundle |> " .. tostring(shell_quote(package_source_target(package))))
-        print(": " .. tostring(package_source_target(package)) .. " | " .. tostring(package_dependencies(package, args.tup_bundle_dep_group)) .. " |> !esbuild_bundle |> " .. tostring(shell_quote(package_output_target(package))) .. " {packages}")
+        if args.minify == "only" then
+          print(": " .. tostring(package_source_target(package)) .. " | " .. tostring(package_dependencies(package, args.tup_bundle_dep_group)) .. " |> !esbuild_bundle_minified |> " .. tostring(shell_quote(package_output_target(package, ".min.js"))))
+        else
+          print(": " .. tostring(package_source_target(package)) .. " | " .. tostring(package_dependencies(package, args.tup_bundle_dep_group)) .. " |> !esbuild_bundle |> " .. tostring(shell_quote(package_output_target(package))) .. " {packages}")
+        end
       end
-      print()
-      print("# minifying packages")
-      for _index_0 = 1, #packages do
-        local package = packages[_index_0]
-        print(": " .. tostring(package_source_target(package)) .. " | {packages} |> !esbuild_bundle_minified |> " .. tostring(shell_quote(package_output_target(package, ".min.js"))))
+      if args.minify == "both" then
+        print()
+        print("# minifying packages")
+        for _index_0 = 1, #packages do
+          local package = packages[_index_0]
+          print(": " .. tostring(package_source_target(package)) .. " | {packages} |> !esbuild_bundle_minified |> " .. tostring(shell_quote(package_output_target(package, ".min.js"))))
+        end
       end
     elseif "makefile" == _exp_1 then
       print("ESBUILD=" .. tostring(shell_quote(args.esbuild_bin or "esbuild")))

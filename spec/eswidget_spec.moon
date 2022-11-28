@@ -130,6 +130,7 @@ describe "eswidget.cmd", ->
         widget_dirs: {"spec/views"}
         source_dir: "spec/static/js"
         output_dir: "spec/static"
+        minify: "both"
       }
 
       assert_expected_output "simple_tupfile.tup"
@@ -146,6 +147,7 @@ describe "eswidget.cmd", ->
         esbuild_bin: "ezbuild"
         tup_compile_dep_group: "$(TOP)/<moon>"
         tup_bundle_dep_group: "$(TOP)/<coffee>"
+        minify: "only"
       }
 
       assert_expected_output "customized_tupfile.tup"

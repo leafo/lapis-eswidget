@@ -9,6 +9,9 @@ build:
 	echo "-- v""im: set filetype=lua:" >> bin/$(BIN)
 	chmod +x bin/$(BIN)
 
+rebuild_spec:
+	REBUILD_EXPECTED_OUTPUT=1 busted
+
 local: build
 	luarocks --lua-version=5.1 make --local lapis-eswidget-dev-1.rockspec
 
