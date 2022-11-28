@@ -464,28 +464,41 @@ _M.run = function(args)
           package_dependencies = _accum_0
         end
         print(tostring(append_output(package_source_target(package))) .. ": " .. tostring(table.concat(package_dependencies, " ")))
-        print("", "mkdir -p \"" .. tostring(args.source_dir) .. "\"")
+        print("", "mkdir -p " .. tostring(shell_quote(args.source_dir)))
         print("", [[(for file in $^; do echo 'import "]] .. join(source_to_top, "'$$file'") .. [[";' | sed 's/\.js//'; done) > "$@"]])
         print()
+        local has_css = types.one_of(args.css_packages or { })(package)
         local _exp_2 = args.minify
         if "both" == _exp_2 or "none" == _exp_2 then
           local bundle_target = append_output(package_output_target(package))
+          if has_css then
+            append_output(package_output_target(package, ".css"))
+          end
           if args.sourcemap then
             append_output(tostring(bundle_target) .. ".map")
+            if has_css then
+              append_output(package_output_target(package, ".css.map"))
+            end
           end
           print(tostring(bundle_target) .. ": " .. tostring(package_source_target(package)))
-          print("", "mkdir -p \"" .. tostring(args.output_dir) .. "\"")
+          print("", "mkdir -p " .. tostring(shell_quote(args.output_dir)))
           print("", "NODE_PATH=" .. tostring(shell_quote(args.source_dir)) .. " $(ESBUILD) " .. tostring(esbuild_args) .. " $< --outfile=$@")
           print()
         end
         local _exp_3 = args.minify
         if "both" == _exp_3 or "only" == _exp_3 then
           local bundle_target = append_output(package_output_target(package, ".min.js"))
+          if has_css then
+            append_output(package_output_target(package, ".min.css"))
+          end
           if args.sourcemap then
             append_output(tostring(bundle_target) .. ".map")
+            if has_css then
+              append_output(package_output_target(package, ".min.css.map"))
+            end
           end
           print(tostring(bundle_target) .. ": " .. tostring(package_source_target(package)))
-          print("", "mkdir -p \"" .. tostring(args.output_dir) .. "\"")
+          print("", "mkdir -p " .. tostring(shell_quote(args.output_dir)))
           print("", "NODE_PATH=" .. tostring(shell_quote(args.source_dir)) .. " $(ESBUILD) " .. tostring(esbuild_args) .. " --minify $< --outfile=$@")
           print()
         end

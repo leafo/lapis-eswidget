@@ -208,6 +208,7 @@ window.init_Login = function(widget_selector, widget_params) {
         esbuild_bin: "ezbuild"
         minify: "only"
         sourcemap: true
+        css_packages: {"main"}
       }
 
       assert_expected_output "customized_makefile"

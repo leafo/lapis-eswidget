@@ -345,31 +345,47 @@ _M.run = (args) ->
             print "# Building package: #{package}"
             package_dependencies = [input_to_output file for file in *files]
             print "#{append_output package_source_target package}: #{table.concat package_dependencies, " "}"
-            print "", "mkdir -p \"#{args.source_dir}\""
+            print "", "mkdir -p #{shell_quote args.source_dir}"
             print "", [[(for file in $^; do echo 'import "]] .. join(source_to_top, "'$$file'") .. [[";' | sed 's/\.js//'; done) > "$@"]]
             print!
 
+            has_css = types.one_of(args.css_packages or {}) package
+
+            -- unminified output
             switch args.minify
               when "both", "none"
                 bundle_target = append_output package_output_target package
 
+                if has_css
+                  append_output package_output_target package, ".css"
+
                 if args.sourcemap
                   append_output "#{bundle_target}.map"
 
+                  if has_css
+                    append_output package_output_target package, ".css.map"
+
                 print "#{bundle_target}: #{package_source_target package}"
-                print "", "mkdir -p \"#{args.output_dir}\""
+                print "", "mkdir -p #{shell_quote args.output_dir}"
                 print "", "NODE_PATH=#{shell_quote args.source_dir} $(ESBUILD) #{esbuild_args} $< --outfile=$@"
                 print!
 
+            -- minified output
             switch args.minify
               when "both", "only"
                 bundle_target = append_output package_output_target package, ".min.js"
 
+                if has_css
+                  append_output package_output_target package, ".min.css"
+
                 if args.sourcemap
                   append_output "#{bundle_target}.map"
 
+                  if has_css
+                    append_output package_output_target package, ".min.css.map"
+
                 print "#{bundle_target}: #{package_source_target package}"
-                print "", "mkdir -p \"#{args.output_dir}\""
+                print "", "mkdir -p #{shell_quote args.output_dir}"
                 print "", "NODE_PATH=#{shell_quote args.source_dir} $(ESBUILD) #{esbuild_args} --minify $< --outfile=$@"
                 print!
 

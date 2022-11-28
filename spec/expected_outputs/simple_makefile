@@ -15,12 +15,12 @@ spec/views/user/settings.js: spec/views/user/settings.moon
 
 # Building package: main
 spec/static/js/main.js: spec/views/login.js spec/views/user_profile.js spec/views/user/settings.js
-	mkdir -p "spec/static/js"
+	mkdir -p spec/static/js
 	(for file in $^; do echo 'import "../../../'$$file'";' | sed 's/\.js//'; done) > "$@"
 
 # Building package: settings
 spec/static/js/settings.js: spec/views/user/settings.js
-	mkdir -p "spec/static/js"
+	mkdir -p spec/static/js
 	(for file in $^; do echo 'import "../../../'$$file'";' | sed 's/\.js//'; done) > "$@"
 
 # Misc rules
