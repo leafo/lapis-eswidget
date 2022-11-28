@@ -192,13 +192,21 @@ _M.run = function(args)
     end
     local _exp_1 = args.format
     if "json" == _exp_1 then
-      local asset_spec = { }
+      local asset_spec = {
+        config = {
+          esbuild = args.esbuild_bin,
+          moonscript = args.moonscript,
+          source_dir = args.source_dir,
+          output_dir = args.output_dir
+        }
+      }
       for _des_0 in each_widget() do
         local module_name, widget, file
         module_name, widget, file = _des_0.module_name, _des_0.widget, _des_0.file
         asset_spec.widgets = asset_spec.widgets or { }
         asset_spec.widgets[module_name] = {
           path = file,
+          target = input_to_output(file),
           name = widget:widget_name(),
           packages = widget.asset_packages,
           class_list = {
@@ -210,9 +218,15 @@ _M.run = function(args)
           for _index_0 = 1, #_list_0 do
             local package = _list_0[_index_0]
             asset_spec.packages = asset_spec.packages or { }
-            local _update_0 = package
-            asset_spec.packages[_update_0] = asset_spec.packages[_update_0] or { }
-            table.insert(asset_spec.packages[package], module_name)
+            if not (asset_spec.packages[package]) then
+              asset_spec.packages[package] = {
+                source_target = package_source_target(package),
+                bundle_target = package_output_target(package),
+                bundle_min_target = package_output_target(package, ".min.js"),
+                widgets = { }
+              }
+            end
+            table.insert(asset_spec.packages[package].widgets, module_name)
           end
         end
       end

@@ -137,12 +137,20 @@ _M.run = (args) ->
 
       switch args.format
         when "json"
-          asset_spec = {}
+          asset_spec = {
+            config: {
+              esbuild: args.esbuild_bin
+              moonscript: args.moonscript
+              source_dir: args.source_dir
+              output_dir: args.output_dir
+            }
+          }
 
           for {:module_name, :widget, :file} in each_widget!
             asset_spec.widgets or= {}
             asset_spec.widgets[module_name] = {
               path: file
+              target: input_to_output file
               name: widget\widget_name!
               packages: widget.asset_packages
               class_list: { widget\widget_class_list! }
@@ -151,8 +159,16 @@ _M.run = (args) ->
             if next widget.asset_packages
               for package in *widget.asset_packages
                 asset_spec.packages or= {}
-                asset_spec.packages[package] or= {}
-                table.insert asset_spec.packages[package], module_name
+
+                unless asset_spec.packages[package]
+                  asset_spec.packages[package] = {
+                    source_target: package_source_target package
+                    bundle_target: package_output_target package
+                    bundle_min_target: package_output_target package, ".min.js"
+                    widgets: {}
+                  }
+
+                table.insert asset_spec.packages[package].widgets, module_name
 
           print to_json asset_spec
 

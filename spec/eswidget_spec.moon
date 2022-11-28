@@ -194,6 +194,11 @@ ESBUILD=ezbuild
       import from_json from require "lapis.util"
 
       assert_result = types.assert types.shape {
+        config: types.shape {
+          moonscript: true
+          source_dir: "spec/static/js"
+          output_dir: "spec/static"
+        }
         packages: types.shape {
           main: types.table
         }
