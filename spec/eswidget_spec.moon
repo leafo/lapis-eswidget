@@ -5,8 +5,10 @@ import sorted_pairs from require "spec.helpers"
 
 import types from require "tableshape"
 
+EXPECTED_OUTPUTS = "spec/expected_outputs"
+
 get_expected_output = (name) ->
-  f = assert io.open "spec/expected_outputs/#{name}", "r"
+  f = assert io.open "#{EXPECTED_OUTPUTS}/#{name}", "r"
   f\read "*a"
 
 describe "eswidget.cmd", ->
@@ -16,6 +18,16 @@ describe "eswidget.cmd", ->
 
   get_output = ->
     table.concat [line .. "\n" for line in *print_buffer]
+
+  assert_expected_output = (name) ->
+    if os.getenv "REBUILD_EXPECTED_OUTPUT"
+      print "Rebuilding #{EXPECTED_OUTPUTS}/#{name}"
+      f = assert io.open "#{EXPECTED_OUTPUTS}/#{name}", "w"
+      f\write get_output!
+      f\close!
+
+    expected = get_expected_output(name)
+    assert.same expected, get_output!
 
   before_each ->
     snapshot = assert\snapshot!
@@ -67,7 +79,7 @@ describe "eswidget.cmd", ->
         widget_dirs: {"spec/views"}
       }
 
-      assert.same get_expected_output("main_package.js"), trim get_output!
+      assert_expected_output "main_package.js"
 
     it "fails for empty/invalid package", ->
       import run from require "lapis.eswidget.cmd"
@@ -121,7 +133,7 @@ describe "eswidget.cmd", ->
         output_dir: "spec/static"
       }
 
-      assert.same get_expected_output("simple_tupfile.tup"), get_output!
+      assert_expected_output "simple_tupfile.tup"
 
     it "generates customized tupfile", ->
       import run from require "lapis.eswidget.cmd"
@@ -137,7 +149,7 @@ describe "eswidget.cmd", ->
         tup_bundle_dep_group: "$(TOP)/<coffee>"
       }
 
-      assert.same get_expected_output("customized_tupfile.tup"), get_output!
+      assert_expected_output "customized_tupfile.tup"
 
     it "generates json", ->
       import run from require "lapis.eswidget.cmd"
@@ -179,7 +191,7 @@ describe "eswidget.cmd", ->
         output_dir: "spec/static"
       }
 
-      assert.same get_expected_output("simple_makefile"), trim get_output!
+      assert_expected_output "simple_makefile"
 
 describe "eswidget", ->
   sorted_pairs!
