@@ -285,9 +285,8 @@ _M.run = function(args)
         print(": " .. tostring(package_source_target(package)) .. " | {packages} |> !esbuild_bundle_minified |> " .. tostring(shell_quote(package_output_target(package, ".min.js"))))
       end
     elseif "makefile" == _exp_1 then
-      if args.esbuild_bin then
-        print("ESBUILD=" .. tostring(shell_quote(args.esbuild_bin)))
-      end
+      print("ESBUILD=" .. tostring(shell_quote(args.esbuild_bin or "esbuild")))
+      print()
       local found_widgets
       do
         local _accum_0 = { }
@@ -341,12 +340,15 @@ _M.run = function(args)
           package_dependencies = _accum_0
         end
         print(tostring(package_source_target(package)) .. ": " .. tostring(table.concat(package_dependencies, " ")))
-        print("", [[(for file in $^; do echo 'import "]] .. join(source_to_top, "'$file'") .. [[";' | sed 's/\.js//'; done) > "$@"]])
+        print("", "mkdir -p \"" .. tostring(args.source_dir) .. "\"")
+        print("", [[(for file in $^; do echo 'import "]] .. join(source_to_top, "'$$file'") .. [[";' | sed 's/\.js//'; done) > "$@"]])
         print()
         print(tostring(package_output_target(package)) .. ": " .. tostring(package_source_target(package)))
+        print("", "mkdir -p \"" .. tostring(args.output_dir) .. "\"")
         print("", "NODE_PATH=" .. tostring(shell_quote(args.source_dir)) .. " $(ESBUILD) --target=es6 --log-level=warning --bundle $< --outfile=$@")
         print()
         print(tostring(package_output_target(package, ".min.js")) .. ": " .. tostring(package_source_target(package)))
+        print("", "mkdir -p \"" .. tostring(args.output_dir) .. "\"")
         print("", "NODE_PATH=" .. tostring(shell_quote(args.source_dir)) .. " $(ESBUILD) --target=es6 --log-level=warning --minify --bundle $< --outfile=$@")
         print()
       end

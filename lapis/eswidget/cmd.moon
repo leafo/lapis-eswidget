@@ -216,8 +216,8 @@ _M.run = (args) ->
             print ": #{package_source_target package} | {packages} |> !esbuild_bundle_minified |> #{shell_quote package_output_target package, ".min.js"}"
 
         when "makefile"
-          if args.esbuild_bin
-            print "ESBUILD=#{shell_quote args.esbuild_bin}"
+          print "ESBUILD=#{shell_quote args.esbuild_bin or "esbuild"}"
+          print!
 
           found_widgets = [tuple for tuple in each_widget!]
 
@@ -245,14 +245,17 @@ _M.run = (args) ->
           for package, files  in pairs package_files
             package_dependencies = [input_to_output file for file in *files]
             print "#{package_source_target package}: #{table.concat package_dependencies, " "}"
-            print "", [[(for file in $^; do echo 'import "]] .. join(source_to_top, "'$file'") .. [[";' | sed 's/\.js//'; done) > "$@"]]
+            print "", "mkdir -p \"#{args.source_dir}\""
+            print "", [[(for file in $^; do echo 'import "]] .. join(source_to_top, "'$$file'") .. [[";' | sed 's/\.js//'; done) > "$@"]]
             print!
 
             print "#{package_output_target package}: #{package_source_target package}"
+            print "", "mkdir -p \"#{args.output_dir}\""
             print "", "NODE_PATH=#{shell_quote args.source_dir} $(ESBUILD) --target=es6 --log-level=warning --bundle $< --outfile=$@"
             print!
 
             print "#{package_output_target package, ".min.js"}: #{package_source_target package}"
+            print "", "mkdir -p \"#{args.output_dir}\""
             print "", "NODE_PATH=#{shell_quote args.source_dir} $(ESBUILD) --target=es6 --log-level=warning --minify --bundle $< --outfile=$@"
             print!
 
