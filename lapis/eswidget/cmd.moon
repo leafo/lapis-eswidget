@@ -354,7 +354,7 @@ _M.run = (args) ->
                 bundle_target = append_output package_output_target package
 
                 if args.sourcemap
-                  append_output "#{target}.map"
+                  append_output "#{bundle_target}.map"
 
                 print "#{bundle_target}: #{package_source_target package}"
                 print "", "mkdir -p \"#{args.output_dir}\""

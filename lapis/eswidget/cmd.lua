@@ -471,7 +471,7 @@ _M.run = function(args)
         if "both" == _exp_2 or "none" == _exp_2 then
           local bundle_target = append_output(package_output_target(package))
           if args.sourcemap then
-            append_output(tostring(target) .. ".map")
+            append_output(tostring(bundle_target) .. ".map")
           end
           print(tostring(bundle_target) .. ": " .. tostring(package_source_target(package)))
           print("", "mkdir -p \"" .. tostring(args.output_dir) .. "\"")
