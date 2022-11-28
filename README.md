@@ -27,7 +27,7 @@ class MyWidget extends require "lapis.eswidget"
 Extracting the module code on the command line:
 
 ```bash
-lapis-eswidget compile_js widgets.my_widget
+lapis-eswidget compile_js --module widgets.my_widget
 ```
 
 Extracting module code in code:
@@ -38,11 +38,20 @@ MyWidget = require("widgets.my_widget")
 print MyWidget\compile_es_module!
 ```
 
+Building an entire package the module code on the command line:
+
+> Note: You generally want to use `generate_spec` to create instructions to
+> build a package incrementally. --package mode may be slow since it will scan
+> and evaluate the entire widget filesystem tree
+
+```bash
+lapis-eswidget compile_js --package main
+```
+
 ## `lapis-eswidget` command line tool
 
-The `lapis-eswidget` command can be used to scan widget directories and output
-a build file that can be used by a build system to generate the final asset
-packages. This intermediate file is called the *Asset Spec*.
+The `lapis-eswidget` command can be used to work with widget modules,
+extracting code or generating instructions to create the final bundles.
 
 The following commands are included
 
@@ -52,7 +61,14 @@ The following commands are included
 lapis-eswidget compile_js --help
 ```
 
-Compile a single module or entire package to JavaScript
+Compile a single module or entire package to JavaScript. One of the following
+sources must be specified:
+
+* `--file` - Load by the filename of a Lua module that contains an ESWidget (eg. `views/profile.lua`)
+* `--module` - Load by Lua module name (eg. `views.profile`)
+* `--package` - Will scan filesystem (see `--widget-dirs`) and concatenate the output of all lua modules that extend ESWidget and specify the package in `@asset_packages`
+
+If you want to enable loading MoonScript modules then you must pass `--moonscript`
 
 ### `generate_spec`
 
@@ -61,7 +77,7 @@ lapis-eswidget generate_spec --help
 ```
 
 Scan directories for widgets that extend from `ESWidget` and generate a
-specification for compiling bundles.
+specification for compiling bundles. This intermediate file is called an *Asset Spec*.
 
 Supports the following output formats: `json`, `tup`, `makefile`
 
