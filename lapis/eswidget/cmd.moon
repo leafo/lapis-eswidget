@@ -135,6 +135,17 @@ _M.run = (args) ->
 
         args.source_dir\gsub("[^/]+", "..") -- this may not be very reliable, but should work in simple cases
 
+      esbuild_args = {
+        "--target=es6"
+        "--log-level=warning"
+        "--bundle"
+      }
+
+      if args.sourcemap
+        table.insert esbuild_args, "--sourcemap"
+
+      esbuild_args = table.concat esbuild_args, " "
+
       switch args.format
         when "json"
           asset_spec = {
@@ -189,16 +200,6 @@ _M.run = (args) ->
           print "!compile_js = |> ^ compile_js %f > %o^ lapis-eswidget compile_js #{args.moonscript and "--moonscript" or ""} --file %f > %o |>"
           print [[!join_bundle = |> ^ join bundle %o^ (for file in %f; do echo 'import "]] .. join(source_to_top, "'$file'") .. [[";' | sed 's/\.js//'; done) > %o |>]]
 
-          esbuild_args = {
-            "--target=es6"
-            "--log-level=warning"
-            "--bundle"
-          }
-
-          if args.sourcemap
-            table.insert esbuild_args, "--sourcemap"
-
-          esbuild_args = table.concat esbuild_args, " "
 
           switch args.minify
             when "both", "none"
@@ -341,16 +342,26 @@ _M.run = (args) ->
 
             switch args.minify
               when "both", "none"
-                print "#{append_output package_output_target package}: #{package_source_target package}"
+                bundle_target = append_output package_output_target package
+
+                if args.sourcemap
+                  append_output "#{target}.map"
+
+                print "#{bundle_target}: #{package_source_target package}"
                 print "", "mkdir -p \"#{args.output_dir}\""
-                print "", "NODE_PATH=#{shell_quote args.source_dir} $(ESBUILD) --target=es6 --log-level=warning --bundle $< --outfile=$@"
+                print "", "NODE_PATH=#{shell_quote args.source_dir} $(ESBUILD) #{esbuild_args} $< --outfile=$@"
                 print!
 
             switch args.minify
               when "both", "only"
-                print "#{append_output package_output_target package, ".min.js"}: #{package_source_target package}"
+                bundle_target = append_output package_output_target package, ".min.js"
+
+                if args.sourcemap
+                  append_output "#{bundle_target}.map"
+
+                print "#{bundle_target}: #{package_source_target package}"
                 print "", "mkdir -p \"#{args.output_dir}\""
-                print "", "NODE_PATH=#{shell_quote args.source_dir} $(ESBUILD) --target=es6 --log-level=warning --minify --bundle $< --outfile=$@"
+                print "", "NODE_PATH=#{shell_quote args.source_dir} $(ESBUILD) #{esbuild_args} --minify $< --outfile=$@"
                 print!
 
           print "# Misc rules"

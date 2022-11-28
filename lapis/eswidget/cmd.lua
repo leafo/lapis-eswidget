@@ -190,6 +190,15 @@ _M.run = function(args)
       end
       source_to_top = args.source_dir:gsub("[^/]+", "..")
     end
+    local esbuild_args = {
+      "--target=es6",
+      "--log-level=warning",
+      "--bundle"
+    }
+    if args.sourcemap then
+      table.insert(esbuild_args, "--sourcemap")
+    end
+    esbuild_args = table.concat(esbuild_args, " ")
     local _exp_1 = args.format
     if "json" == _exp_1 then
       local asset_spec = {
@@ -241,15 +250,6 @@ _M.run = function(args)
       print()
       print("!compile_js = |> ^ compile_js %f > %o^ lapis-eswidget compile_js " .. tostring(args.moonscript and "--moonscript" or "") .. " --file %f > %o |>")
       print([[!join_bundle = |> ^ join bundle %o^ (for file in %f; do echo 'import "]] .. join(source_to_top, "'$file'") .. [[";' | sed 's/\.js//'; done) > %o |>]])
-      local esbuild_args = {
-        "--target=es6",
-        "--log-level=warning",
-        "--bundle"
-      }
-      if args.sourcemap then
-        table.insert(esbuild_args, "--sourcemap")
-      end
-      esbuild_args = table.concat(esbuild_args, " ")
       local _exp_2 = args.minify
       if "both" == _exp_2 or "none" == _exp_2 then
         print("!esbuild_bundle = |> ^ esbuild bundle %o^ NODE_PATH=" .. tostring(shell_quote(args.source_dir)) .. " $(ESBUILD) " .. tostring(esbuild_args) .. " %f --outfile=%o |>")
@@ -443,16 +443,24 @@ _M.run = function(args)
         print()
         local _exp_2 = args.minify
         if "both" == _exp_2 or "none" == _exp_2 then
-          print(tostring(append_output(package_output_target(package))) .. ": " .. tostring(package_source_target(package)))
+          local bundle_target = append_output(package_output_target(package))
+          if args.sourcemap then
+            append_output(tostring(target) .. ".map")
+          end
+          print(tostring(bundle_target) .. ": " .. tostring(package_source_target(package)))
           print("", "mkdir -p \"" .. tostring(args.output_dir) .. "\"")
-          print("", "NODE_PATH=" .. tostring(shell_quote(args.source_dir)) .. " $(ESBUILD) --target=es6 --log-level=warning --bundle $< --outfile=$@")
+          print("", "NODE_PATH=" .. tostring(shell_quote(args.source_dir)) .. " $(ESBUILD) " .. tostring(esbuild_args) .. " $< --outfile=$@")
           print()
         end
         local _exp_3 = args.minify
         if "both" == _exp_3 or "only" == _exp_3 then
-          print(tostring(append_output(package_output_target(package, ".min.js"))) .. ": " .. tostring(package_source_target(package)))
+          local bundle_target = append_output(package_output_target(package, ".min.js"))
+          if args.sourcemap then
+            append_output(tostring(bundle_target) .. ".map")
+          end
+          print(tostring(bundle_target) .. ": " .. tostring(package_source_target(package)))
           print("", "mkdir -p \"" .. tostring(args.output_dir) .. "\"")
-          print("", "NODE_PATH=" .. tostring(shell_quote(args.source_dir)) .. " $(ESBUILD) --target=es6 --log-level=warning --minify --bundle $< --outfile=$@")
+          print("", "NODE_PATH=" .. tostring(shell_quote(args.source_dir)) .. " $(ESBUILD) " .. tostring(esbuild_args) .. " --minify $< --outfile=$@")
           print()
         end
       end

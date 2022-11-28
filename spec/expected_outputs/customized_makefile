@@ -20,7 +20,7 @@ spec/static/js/main.js: spec/views/login.js spec/views/user_profile.js spec/view
 
 spec/static/main.min.js: spec/static/js/main.js
 	mkdir -p "spec/static"
-	NODE_PATH=spec/static/js $(ESBUILD) --target=es6 --log-level=warning --minify --bundle $< --outfile=$@
+	NODE_PATH=spec/static/js $(ESBUILD) --target=es6 --log-level=warning --bundle --sourcemap --minify $< --outfile=$@
 
 # Building package: settings
 spec/static/js/settings.js: spec/views/user/settings.js
@@ -29,8 +29,8 @@ spec/static/js/settings.js: spec/views/user/settings.js
 
 spec/static/settings.min.js: spec/static/js/settings.js
 	mkdir -p "spec/static"
-	NODE_PATH=spec/static/js $(ESBUILD) --target=es6 --log-level=warning --minify --bundle $< --outfile=$@
+	NODE_PATH=spec/static/js $(ESBUILD) --target=es6 --log-level=warning --bundle --sourcemap --minify $< --outfile=$@
 
 # Misc rules
 clean:
-	rm spec/views/login.js spec/views/user_profile.js spec/views/user/settings.js spec/static/js/main.js spec/static/main.min.js spec/static/js/settings.js spec/static/settings.min.js
+	rm spec/views/login.js spec/views/user_profile.js spec/views/user/settings.js spec/static/js/main.js spec/static/main.min.js spec/static/main.min.js.map spec/static/js/settings.js spec/static/settings.min.js spec/static/settings.min.js.map
