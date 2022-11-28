@@ -207,6 +207,47 @@ ESBUILD=ezbuild
 
       assert_result from_json get_output!
 
+    it "generates simple makefile", ->
+      import trim from require "lapis.util"
+      import run from require "lapis.eswidget.cmd"
+      run {
+        command: "generate_spec"
+        format: "makefile"
+        moonscript: true
+        widget_dirs: {"spec/views"}
+        source_dir: "spec/static/js"
+        output_dir: "spec/static"
+      }
+
+      assert.same [[ESBUILD=esbuild
+
+.PHONY: all clean
+all: spec/static/main.js spec/static/main.min.js
+
+# Building modules
+spec/views/login.js: spec/views/login.moon
+	lapis-eswidget compile_js --moonscript --file "$<" > "$@"
+
+spec/views/user_profile.js: spec/views/user_profile.moon
+	lapis-eswidget compile_js --moonscript --file "$<" > "$@"
+
+# Building packages
+spec/static/js/main.js: spec/views/login.js spec/views/user_profile.js
+	mkdir -p "spec/static/js"
+	(for file in $^; do echo 'import "../../../'$$file'";' | sed 's/\.js//'; done) > "$@"
+
+spec/static/main.js: spec/static/js/main.js
+	mkdir -p "spec/static"
+	NODE_PATH=spec/static/js $(ESBUILD) --target=es6 --log-level=warning --bundle $< --outfile=$@
+
+spec/static/main.min.js: spec/static/js/main.js
+	mkdir -p "spec/static"
+	NODE_PATH=spec/static/js $(ESBUILD) --target=es6 --log-level=warning --minify --bundle $< --outfile=$@
+
+# Misc rules
+clean:
+	rm spec/views/login.js spec/views/user_profile.js spec/static/js/main.js spec/static/main.js spec/static/main.min.js]], trim get_output!
+
 describe "eswidget", ->
   sorted_pairs!
 
