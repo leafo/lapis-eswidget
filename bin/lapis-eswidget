@@ -31,7 +31,8 @@ do
   _with_0:option("--widget-dirs", "Paths where widgets are located"):default("views,widgets"):convert(to_array)
   _with_0:option("--format", "Output fromat for generated asset spec file"):choices({
     "json",
-    "tup"
+    "tup",
+    "makefile"
   }):default("json")
   _with_0:option("--source-dir", "The working directory for source files (Will be set to NODE_PATH for build)"):default("static/js")
   _with_0:option("--output-dir", "Destination of final compiled asset packages"):default("static")

@@ -165,6 +165,31 @@ _M.run = function(args)
   elseif "generate_spec" == _exp_0 then
     local to_json
     to_json = require("lapis.util").to_json
+    local input_to_output
+    input_to_output = function(input_fname)
+      return input_fname:gsub("%." .. tostring(search_extension) .. "$", "") .. ".js"
+    end
+    local package_source_target
+    package_source_target = function(package)
+      return join(args.source_dir, tostring(package) .. ".js")
+    end
+    local package_output_target
+    package_output_target = function(package, suffix)
+      if suffix == nil then
+        suffix = ".js"
+      end
+      return join(args.output_dir, tostring(package) .. tostring(suffix))
+    end
+    local source_to_top
+    do
+      if args.source_dir:match("^/") then
+        error("--source-dir must be a relative path from the top level directory, and not an absolute path")
+      end
+      if args.source_dir:match("%.%.") or args.source_dir:match("%./") then
+        error("--source-dir must not use ../ or ./")
+      end
+      source_to_top = args.source_dir:gsub("[^/]+", "..")
+    end
     local _exp_1 = args.format
     if "json" == _exp_1 then
       local asset_spec = { }
@@ -223,32 +248,11 @@ _M.run = function(args)
         print("ESBUILD=" .. tostring(shell_quote(args.esbuild_bin)))
       end
       print()
-      local source_to_top
-      do
-        if args.source_dir:match("^/") then
-          error("--source-dir must be a relative path from the top level directory, and not an absolute path")
-        end
-        if args.source_dir:match("%.%.") or args.source_dir:match("%./") then
-          error("--source-dir must not use ../ or ./")
-        end
-        source_to_top = args.source_dir:gsub("[^/]+", "..")
-      end
       print("!compile_js = |> ^ compile_js %f > %o^ lapis-eswidget compile_js " .. tostring(args.moonscript and "--moonscript" or "") .. " --file %f > %o |>")
       print([[!join_bundle = |> ^ join bundle %o^ (for file in %f; do echo 'import "]] .. join(source_to_top, "'$file'") .. [[";' | sed 's/\.js//'; done) > %o |>]])
       print("!esbuild_bundle = |> ^ esbuild bundle %o^ NODE_PATH=" .. tostring(shell_quote(args.source_dir)) .. " $(ESBUILD) --target=es6 --log-level=warning --bundle %f --outfile=%o |>")
       print("!esbuild_bundle_minified = |> ^ esbuild minified bundle %o^ NODE_PATH=" .. tostring(shell_quote(args.source_dir)) .. " $(ESBUILD) --target=es6 --log-level=warning --minify --bundle %f --outfile=%o |>")
       print()
-      local package_source_target
-      package_source_target = function(package)
-        return join(args.source_dir, tostring(package) .. ".js")
-      end
-      local package_output_target
-      package_output_target = function(package, suffix)
-        if suffix == nil then
-          suffix = ".js"
-        end
-        return join(args.output_dir, tostring(package) .. tostring(suffix))
-      end
       local appended_group
       appended_group = function(group_setting, prefix)
         if prefix == nil then
@@ -268,7 +272,7 @@ _M.run = function(args)
         print("# package: " .. tostring(package))
         for _index_1 = 1, #files do
           local file = files[_index_1]
-          local out_file = file:gsub("%." .. tostring(search_extension) .. "$", "") .. ".js"
+          local out_file = input_to_output(file)
           print(": " .. tostring(file) .. tostring(appended_group(args.tup_compile_dep_group, " | ")) .. " |> !compile_js |> " .. tostring(out_file) .. " {package_" .. tostring(package) .. "}")
         end
         print(": {package_" .. tostring(package) .. "} |> !join_bundle |> " .. tostring(shell_quote(package_source_target(package))))
@@ -279,6 +283,72 @@ _M.run = function(args)
       for _index_0 = 1, #packages do
         local package = packages[_index_0]
         print(": " .. tostring(package_source_target(package)) .. " | {packages} |> !esbuild_bundle_minified |> " .. tostring(shell_quote(package_output_target(package, ".min.js"))))
+      end
+    elseif "makefile" == _exp_1 then
+      if args.esbuild_bin then
+        print("ESBUILD=" .. tostring(shell_quote(args.esbuild_bin)))
+      end
+      local found_widgets
+      do
+        local _accum_0 = { }
+        local _len_0 = 1
+        for tuple in each_widget() do
+          _accum_0[_len_0] = tuple
+          _len_0 = _len_0 + 1
+        end
+        found_widgets = _accum_0
+      end
+      local package_files = { }
+      for _index_0 = 1, #found_widgets do
+        local _des_0 = found_widgets[_index_0]
+        local file, module_name, widget
+        file, module_name, widget = _des_0.file, _des_0.module_name, _des_0.widget
+        local _list_0 = widget.asset_packages
+        for _index_1 = 1, #_list_0 do
+          local package = _list_0[_index_1]
+          local _update_0 = package
+          package_files[_update_0] = package_files[_update_0] or { }
+          table.insert(package_files[package], file)
+        end
+      end
+      local final_outputs = { }
+      for package in pairs(package_files) do
+        table.insert(final_outputs, package_output_target(package))
+        table.insert(final_outputs, package_output_target(package, ".min.js"))
+      end
+      table.sort(final_outputs)
+      print("all:: " .. tostring(table.concat(final_outputs, " ")))
+      print()
+      for _index_0 = 1, #found_widgets do
+        local _des_0 = found_widgets[_index_0]
+        local file, module_name, widget
+        file, module_name, widget = _des_0.file, _des_0.module_name, _des_0.widget
+        print(tostring(input_to_output(file)) .. ": " .. tostring(file))
+        print("", "lapis-eswidget compile_js " .. tostring(args.moonscript and "--moonscript" or "") .. " --file \"$<\" > \"$@\"")
+        print()
+      end
+      print("# Building Packages")
+      for package, files in pairs(package_files) do
+        local package_dependencies
+        do
+          local _accum_0 = { }
+          local _len_0 = 1
+          for _index_0 = 1, #files do
+            local file = files[_index_0]
+            _accum_0[_len_0] = input_to_output(file)
+            _len_0 = _len_0 + 1
+          end
+          package_dependencies = _accum_0
+        end
+        print(tostring(package_source_target(package)) .. ": " .. tostring(table.concat(package_dependencies, " ")))
+        print("", [[(for file in $^; do echo 'import "]] .. join(source_to_top, "'$file'") .. [[";' | sed 's/\.js//'; done) > "$@"]])
+        print()
+        print(tostring(package_output_target(package)) .. ": " .. tostring(package_source_target(package)))
+        print("", "NODE_PATH=" .. tostring(shell_quote(args.source_dir)) .. " $(ESBUILD) --target=es6 --log-level=warning --bundle $< --outfile=$@")
+        print()
+        print(tostring(package_output_target(package, ".min.js")) .. ": " .. tostring(package_source_target(package)))
+        print("", "NODE_PATH=" .. tostring(shell_quote(args.source_dir)) .. " $(ESBUILD) --target=es6 --log-level=warning --minify --bundle $< --outfile=$@")
+        print()
       end
     end
   elseif "debug" == _exp_0 then

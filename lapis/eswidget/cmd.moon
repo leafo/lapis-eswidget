@@ -115,6 +115,26 @@ _M.run = (args) ->
     when "generate_spec"
       import to_json from require "lapis.util"
 
+      input_to_output = (input_fname) ->
+        input_fname\gsub("%.#{search_extension}$", "") .. ".js"
+
+      package_source_target = (package) ->
+        join args.source_dir, "#{package}.js"
+
+      package_output_target = (package, suffix=".js") ->
+        join args.output_dir, "#{package}#{suffix}"
+
+      -- relative path to move from args.source_dir to the top level directory
+      -- eg static/js -> ../..
+      source_to_top = do
+        if args.source_dir\match "^/"
+          error "--source-dir must be a relative path from the top level directory, and not an absolute path"
+
+        if args.source_dir\match("%.%.") or args.source_dir\match("%./")
+          error "--source-dir must not use ../ or ./"
+
+        args.source_dir\gsub("[^/]+", "..") -- this may not be very reliable, but should work in simple cases
+
       switch args.format
         when "json"
           asset_spec = {}
@@ -159,18 +179,6 @@ _M.run = (args) ->
 
           print!
 
-          -- relative path to move from args.source_dir to the top level directory
-          -- eg static/js -> ../..
-          source_to_top = do
-            if args.source_dir\match "^/"
-              error "--source-dir must be a relative path from the top level directory, and not an absolute path"
-
-            if args.source_dir\match("%.%.") or args.source_dir\match("%./")
-              error "--source-dir must not use ../ or ./"
-
-            args.source_dir\gsub("[^/]+", "..") -- this may not be very reliable, but should work in simple cases
-
-
           -- declare macros used by individual file commands
           print "!compile_js = |> ^ compile_js %f > %o^ lapis-eswidget compile_js #{args.moonscript and "--moonscript" or ""} --file %f > %o |>"
           print [[!join_bundle = |> ^ join bundle %o^ (for file in %f; do echo 'import "]] .. join(source_to_top, "'$file'") .. [[";' | sed 's/\.js//'; done) > %o |>]]
@@ -179,11 +187,6 @@ _M.run = (args) ->
 
           print!
 
-          package_source_target = (package) ->
-            join args.source_dir, "#{package}.js"
-
-          package_output_target = (package, suffix=".js") ->
-            join args.output_dir, "#{package}#{suffix}"
 
           appended_group = (group_setting, prefix="") ->
             if group_setting and group_setting != ""
@@ -199,7 +202,7 @@ _M.run = (args) ->
             print "# package: #{package}"
             for file in *files
               -- TODO: a single file can output to multiple packages, we should be able to handle that here
-              out_file = file\gsub("%.#{search_extension}$", "") .. ".js"
+              out_file = input_to_output file
               print ": #{file}#{appended_group args.tup_compile_dep_group, " | "} |> !compile_js |> #{out_file} {package_#{package}}"
 
             -- TODO: this intermediate file may be unecessary, we can consider piping the result directly into esbuild
@@ -211,6 +214,47 @@ _M.run = (args) ->
           print "# minifying packages"
           for package in *packages
             print ": #{package_source_target package} | {packages} |> !esbuild_bundle_minified |> #{shell_quote package_output_target package, ".min.js"}"
+
+        when "makefile"
+          if args.esbuild_bin
+            print "ESBUILD=#{shell_quote args.esbuild_bin}"
+
+          found_widgets = [tuple for tuple in each_widget!]
+
+          package_files = {}
+          for {:file, :module_name, :widget} in *found_widgets
+            for package in *widget.asset_packages
+              package_files[package] or= {}
+              table.insert package_files[package], file
+
+          final_outputs = {}
+          for package in pairs package_files
+            table.insert final_outputs, package_output_target package
+            table.insert final_outputs, package_output_target package, ".min.js"
+
+          table.sort final_outputs
+          print "all:: #{table.concat final_outputs, " "}"
+          print!
+
+          for {:file, :module_name, :widget} in *found_widgets
+            print "#{input_to_output file}: #{file}"
+            print "", "lapis-eswidget compile_js #{args.moonscript and "--moonscript" or ""} --file \"$<\" > \"$@\""
+            print!
+
+          print "# Building Packages"
+          for package, files  in pairs package_files
+            package_dependencies = [input_to_output file for file in *files]
+            print "#{package_source_target package}: #{table.concat package_dependencies, " "}"
+            print "", [[(for file in $^; do echo 'import "]] .. join(source_to_top, "'$file'") .. [[";' | sed 's/\.js//'; done) > "$@"]]
+            print!
+
+            print "#{package_output_target package}: #{package_source_target package}"
+            print "", "NODE_PATH=#{shell_quote args.source_dir} $(ESBUILD) --target=es6 --log-level=warning --bundle $< --outfile=$@"
+            print!
+
+            print "#{package_output_target package, ".min.js"}: #{package_source_target package}"
+            print "", "NODE_PATH=#{shell_quote args.source_dir} $(ESBUILD) --target=es6 --log-level=warning --minify --bundle $< --outfile=$@"
+            print!
 
     when "debug"
       Widget = require args.module_name
