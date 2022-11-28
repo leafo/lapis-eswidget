@@ -132,9 +132,9 @@ class Two extends One
 class Three extends Two
 
 
-One\class_list! --> 
-Two\class_list! --> 
-Three\class_list! --> 
+One\widget_class_list! -->  "one_widget"
+Two\widget_class_list! --> "two_widget", "one_widget"
+Three\widget_class_list! -->  "three_widget", "two_widget", "one_widget"
 ```
 
 ### Parameter Validation

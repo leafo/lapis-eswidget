@@ -1,5 +1,3 @@
--- TODO: should we also provide the constructor/render params system in this base widget
-
 import Widget, is_mixins_class from require "lapis.html"
 import underscore from require "lapis.util"
 
