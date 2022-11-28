@@ -11,10 +11,7 @@ parser\flag "--moonscript", "Enable MoonScript module loading"
 
 to_array = (str) -> [trim(d) for d in str\gmatch "[^,]+"]
 
-with parser\command "debug", "Show any extractable information about a widget module"
-  \argument "module_name"
-
-with parser\command "compile_js", "Compile the individual js_init function for a module"
+with parser\command "compile_js", "Compile a single module or entire package to JavaScript"
   \option("--module")
   \option("--file")
   \option("--package")
@@ -35,6 +32,11 @@ with parser\command "generate_spec", "Scan widgets and generate specification fo
   -- these are the tup order-only dependency groups for various stages of building
   \option("--tup-compile-dep-group", "Dependency group used during the widget -> js compile phase (eg. $(TOP)/<moon>)")
   \option("--tup-bundle-dep-group", "Dependency group used during esbuild bundling phase (eg. $(TOP)/<coffee>)")
+
+with parser\command "debug", "Show any extractable information about a widget module"
+  \argument "module_name"
+
+
 
 args = parser\parse [v for _, v in ipairs _G.arg]
 

@@ -16,11 +16,7 @@ to_array = function(str)
   return _accum_0
 end
 do
-  local _with_0 = parser:command("debug", "Show any extractable information about a widget module")
-  _with_0:argument("module_name")
-end
-do
-  local _with_0 = parser:command("compile_js", "Compile the individual js_init function for a module")
+  local _with_0 = parser:command("compile_js", "Compile a single module or entire package to JavaScript")
   _with_0:option("--module")
   _with_0:option("--file")
   _with_0:option("--package")
@@ -46,6 +42,10 @@ do
   _with_0:option("--esbuild-bin", "Set the path to the esbuild binary. When empty, will use the ESBUILD tup environment variable")
   _with_0:option("--tup-compile-dep-group", "Dependency group used during the widget -> js compile phase (eg. $(TOP)/<moon>)")
   _with_0:option("--tup-bundle-dep-group", "Dependency group used during esbuild bundling phase (eg. $(TOP)/<coffee>)")
+end
+do
+  local _with_0 = parser:command("debug", "Show any extractable information about a widget module")
+  _with_0:argument("module_name")
 end
 local args = parser:parse((function()
   local _accum_0 = { }
