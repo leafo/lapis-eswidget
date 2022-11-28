@@ -3,6 +3,8 @@ import subclass_of from require "tableshape.moonscript"
 
 import shell_escape, join from require "lapis.cmd.path"
 
+unpack = table.unpack or unpack
+
 -- we reference the module so we can overwrite these methods when running in
 -- test suite
 _M = {

@@ -7,6 +7,7 @@ do
   local _obj_0 = require("lapis.cmd.path")
   shell_escape, join = _obj_0.shell_escape, _obj_0.join
 end
+local unpack = table.unpack or unpack
 local _M = {
   print = print,
   print_warning = function(msg)
