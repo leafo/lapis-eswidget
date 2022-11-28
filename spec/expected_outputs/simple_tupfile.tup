@@ -7,12 +7,18 @@ export LUA_CPATH
 !esbuild_bundle = |> ^ esbuild bundle %o^ NODE_PATH=spec/static/js $(ESBUILD) --target=es6 --log-level=warning --bundle %f --outfile=%o |>
 !esbuild_bundle_minified = |> ^ esbuild minified bundle %o^ NODE_PATH=spec/static/js $(ESBUILD) --target=es6 --log-level=warning --minify --bundle %f --outfile=%o |>
 
-
-# package: main
 : spec/views/login.moon |> !compile_js |> spec/views/login.js {package_main}
 : spec/views/user_profile.moon |> !compile_js |> spec/views/user_profile.js {package_main}
-: {package_main} |> !join_bundle |> spec/static/js/main.js
-: spec/static/js/main.js | {package_main} |> !esbuild_bundle |> spec/static/main.js {packages}
+: spec/views/user/settings.moon |> !compile_js |> spec/views/user/settings.js
+
+# package: main
+: {package_main} spec/views/user/settings.js |> !join_bundle |> spec/static/js/main.js
+: spec/static/js/main.js | {package_main} spec/views/user/settings.js |> !esbuild_bundle |> spec/static/main.js {packages}
+
+# package: settings
+: spec/views/user/settings.js |> !join_bundle |> spec/static/js/settings.js
+: spec/static/js/settings.js | spec/views/user/settings.js |> !esbuild_bundle |> spec/static/settings.js {packages}
 
 # minifying packages
 : spec/static/js/main.js | {packages} |> !esbuild_bundle_minified |> spec/static/main.min.js
+: spec/static/js/settings.js | {packages} |> !esbuild_bundle_minified |> spec/static/settings.min.js

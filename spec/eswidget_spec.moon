@@ -69,7 +69,6 @@ describe "eswidget.cmd", ->
 }]], trim get_output!
 
     it "compiles entire package", ->
-      import trim from require "lapis.util"
       import run from require "lapis.eswidget.cmd"
 
       run {
@@ -180,7 +179,6 @@ describe "eswidget.cmd", ->
       assert_result from_json get_output!
 
     it "generates simple makefile", ->
-      import trim from require "lapis.util"
       import run from require "lapis.eswidget.cmd"
       run {
         command: "generate_spec"

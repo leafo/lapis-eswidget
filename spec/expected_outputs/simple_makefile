@@ -1,7 +1,7 @@
 ESBUILD=esbuild
 
 .PHONY: all clean
-all: spec/static/main.js spec/static/main.min.js
+all: spec/static/main.js spec/static/main.min.js spec/static/settings.js spec/static/settings.min.js
 
 # Building modules
 spec/views/login.js: spec/views/login.moon
@@ -10,8 +10,11 @@ spec/views/login.js: spec/views/login.moon
 spec/views/user_profile.js: spec/views/user_profile.moon
 	lapis-eswidget compile_js --moonscript --file "$<" > "$@"
 
-# Building packages
-spec/static/js/main.js: spec/views/login.js spec/views/user_profile.js
+spec/views/user/settings.js: spec/views/user/settings.moon
+	lapis-eswidget compile_js --moonscript --file "$<" > "$@"
+
+# Building package: main
+spec/static/js/main.js: spec/views/login.js spec/views/user_profile.js spec/views/user/settings.js
 	mkdir -p "spec/static/js"
 	(for file in $^; do echo 'import "../../../'$$file'";' | sed 's/\.js//'; done) > "$@"
 
@@ -23,6 +26,19 @@ spec/static/main.min.js: spec/static/js/main.js
 	mkdir -p "spec/static"
 	NODE_PATH=spec/static/js $(ESBUILD) --target=es6 --log-level=warning --minify --bundle $< --outfile=$@
 
+# Building package: settings
+spec/static/js/settings.js: spec/views/user/settings.js
+	mkdir -p "spec/static/js"
+	(for file in $^; do echo 'import "../../../'$$file'";' | sed 's/\.js//'; done) > "$@"
+
+spec/static/settings.js: spec/static/js/settings.js
+	mkdir -p "spec/static"
+	NODE_PATH=spec/static/js $(ESBUILD) --target=es6 --log-level=warning --bundle $< --outfile=$@
+
+spec/static/settings.min.js: spec/static/js/settings.js
+	mkdir -p "spec/static"
+	NODE_PATH=spec/static/js $(ESBUILD) --target=es6 --log-level=warning --minify --bundle $< --outfile=$@
+
 # Misc rules
 clean:
-	rm spec/views/login.js spec/views/user_profile.js spec/static/js/main.js spec/static/main.js spec/static/main.min.js
+	rm spec/views/login.js spec/views/user_profile.js spec/views/user/settings.js spec/static/js/main.js spec/static/main.js spec/static/main.min.js spec/static/js/settings.js spec/static/settings.js spec/static/settings.min.js
