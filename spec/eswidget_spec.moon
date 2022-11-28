@@ -21,10 +21,10 @@ describe "eswidget.cmd", ->
 
   assert_expected_output = (name) ->
     if os.getenv "REBUILD_EXPECTED_OUTPUT"
-      print "Rebuilding #{EXPECTED_OUTPUTS}/#{name}"
       f = assert io.open "#{EXPECTED_OUTPUTS}/#{name}", "w"
       f\write get_output!
       f\close!
+      return pending "Rebuilt #{EXPECTED_OUTPUTS}/#{name}, confirm with git-diff before checking in"
 
     expected = get_expected_output(name)
     assert.same expected, get_output!
