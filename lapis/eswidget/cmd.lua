@@ -310,23 +310,31 @@ _M.run = function(args)
           table.insert(package_files[package], file)
         end
       end
-      local final_outputs = { }
+      local bundle_outputs = { }
       for package in pairs(package_files) do
-        table.insert(final_outputs, package_output_target(package))
-        table.insert(final_outputs, package_output_target(package, ".min.js"))
+        table.insert(bundle_outputs, package_output_target(package))
+        table.insert(bundle_outputs, package_output_target(package, ".min.js"))
       end
-      table.sort(final_outputs)
-      print("all:: " .. tostring(table.concat(final_outputs, " ")))
+      table.sort(bundle_outputs)
+      print(".PHONY: all clean")
+      print("all: " .. tostring(table.concat(bundle_outputs, " ")))
       print()
+      local all_outputs = { }
+      local append_output
+      append_output = function(out)
+        table.insert(all_outputs, out)
+        return out
+      end
+      print("# Building modules")
       for _index_0 = 1, #found_widgets do
         local _des_0 = found_widgets[_index_0]
         local file, module_name, widget
         file, module_name, widget = _des_0.file, _des_0.module_name, _des_0.widget
-        print(tostring(input_to_output(file)) .. ": " .. tostring(file))
+        print(tostring(append_output(input_to_output(file))) .. ": " .. tostring(file))
         print("", "lapis-eswidget compile_js " .. tostring(args.moonscript and "--moonscript" or "") .. " --file \"$<\" > \"$@\"")
         print()
       end
-      print("# Building Packages")
+      print("# Building packages")
       for package, files in pairs(package_files) do
         local package_dependencies
         do
@@ -339,19 +347,31 @@ _M.run = function(args)
           end
           package_dependencies = _accum_0
         end
-        print(tostring(package_source_target(package)) .. ": " .. tostring(table.concat(package_dependencies, " ")))
+        print(tostring(append_output(package_source_target(package))) .. ": " .. tostring(table.concat(package_dependencies, " ")))
         print("", "mkdir -p \"" .. tostring(args.source_dir) .. "\"")
         print("", [[(for file in $^; do echo 'import "]] .. join(source_to_top, "'$$file'") .. [[";' | sed 's/\.js//'; done) > "$@"]])
         print()
-        print(tostring(package_output_target(package)) .. ": " .. tostring(package_source_target(package)))
+        print(tostring(append_output(package_output_target(package))) .. ": " .. tostring(package_source_target(package)))
         print("", "mkdir -p \"" .. tostring(args.output_dir) .. "\"")
         print("", "NODE_PATH=" .. tostring(shell_quote(args.source_dir)) .. " $(ESBUILD) --target=es6 --log-level=warning --bundle $< --outfile=$@")
         print()
-        print(tostring(package_output_target(package, ".min.js")) .. ": " .. tostring(package_source_target(package)))
+        print(tostring(append_output(package_output_target(package, ".min.js"))) .. ": " .. tostring(package_source_target(package)))
         print("", "mkdir -p \"" .. tostring(args.output_dir) .. "\"")
         print("", "NODE_PATH=" .. tostring(shell_quote(args.source_dir)) .. " $(ESBUILD) --target=es6 --log-level=warning --minify --bundle $< --outfile=$@")
         print()
       end
+      print("# Misc rules")
+      print("clean:")
+      return print("", "rm " .. tostring(table.concat((function()
+        local _accum_0 = { }
+        local _len_0 = 1
+        for _index_0 = 1, #all_outputs do
+          local o = all_outputs[_index_0]
+          _accum_0[_len_0] = shell_quote(o)
+          _len_0 = _len_0 + 1
+        end
+        return _accum_0
+      end)(), " ")))
     end
   elseif "debug" == _exp_0 then
     local Widget = require(args.module_name)

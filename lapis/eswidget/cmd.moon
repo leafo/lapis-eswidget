@@ -187,7 +187,6 @@ _M.run = (args) ->
 
           print!
 
-
           appended_group = (group_setting, prefix="") ->
             if group_setting and group_setting != ""
               "#{prefix}#{group_setting}"
@@ -227,37 +226,51 @@ _M.run = (args) ->
               package_files[package] or= {}
               table.insert package_files[package], file
 
-          final_outputs = {}
-          for package in pairs package_files
-            table.insert final_outputs, package_output_target package
-            table.insert final_outputs, package_output_target package, ".min.js"
 
-          table.sort final_outputs
-          print "all:: #{table.concat final_outputs, " "}"
+          bundle_outputs = {}
+
+          for package in pairs package_files
+            table.insert bundle_outputs, package_output_target package
+            table.insert bundle_outputs, package_output_target package, ".min.js"
+
+          table.sort bundle_outputs
+          print ".PHONY: all clean"
+          print "all: #{table.concat bundle_outputs, " "}"
           print!
 
+          all_outputs = {}
+          append_output = (out) ->
+            table.insert all_outputs, out
+            out
+
+          print "# Building modules"
           for {:file, :module_name, :widget} in *found_widgets
-            print "#{input_to_output file}: #{file}"
+            print "#{append_output input_to_output file}: #{file}"
             print "", "lapis-eswidget compile_js #{args.moonscript and "--moonscript" or ""} --file \"$<\" > \"$@\""
             print!
 
-          print "# Building Packages"
+          print "# Building packages"
           for package, files  in pairs package_files
             package_dependencies = [input_to_output file for file in *files]
-            print "#{package_source_target package}: #{table.concat package_dependencies, " "}"
+            print "#{append_output package_source_target package}: #{table.concat package_dependencies, " "}"
             print "", "mkdir -p \"#{args.source_dir}\""
             print "", [[(for file in $^; do echo 'import "]] .. join(source_to_top, "'$$file'") .. [[";' | sed 's/\.js//'; done) > "$@"]]
             print!
 
-            print "#{package_output_target package}: #{package_source_target package}"
+            print "#{append_output package_output_target package}: #{package_source_target package}"
             print "", "mkdir -p \"#{args.output_dir}\""
             print "", "NODE_PATH=#{shell_quote args.source_dir} $(ESBUILD) --target=es6 --log-level=warning --bundle $< --outfile=$@"
             print!
 
-            print "#{package_output_target package, ".min.js"}: #{package_source_target package}"
+            print "#{append_output package_output_target package, ".min.js"}: #{package_source_target package}"
             print "", "mkdir -p \"#{args.output_dir}\""
             print "", "NODE_PATH=#{shell_quote args.source_dir} $(ESBUILD) --target=es6 --log-level=warning --minify --bundle $< --outfile=$@"
             print!
+
+          print "# Misc rules"
+          print "clean:"
+          print "", "rm #{table.concat [shell_quote(o) for o in *all_outputs], " "}"
+
 
     when "debug"
       Widget = require args.module_name
