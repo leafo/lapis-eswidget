@@ -537,6 +537,7 @@ _M.run = function(args)
     end
   elseif "debug" == _exp_0 then
     local Widget = require(args.module_name)
+    assert(subclass_of(require("lapis.eswidget"))(Widget), "You attempted to load a module that doesn't extend `lapis.eswidget`")
     print("Config")
     print("==================")
     print("widget name", Widget:widget_name())
