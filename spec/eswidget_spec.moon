@@ -50,7 +50,8 @@ describe "eswidget.cmd", ->
         file: "spec/views/login.moon"
       }
 
-      assert.same [[window.init_Login = function(widget_selector, widget_params) {
+      assert.same [[import "./login.css"
+window.init_Login = function(widget_selector, widget_params) {
     console.log("Login!", widget_selector, widget_params)
 }]], trim get_output!
 

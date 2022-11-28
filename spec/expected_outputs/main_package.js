@@ -1,4 +1,5 @@
 // spec/views/login.moon (main)
+import "./login.css"
 window.init_Login = function(widget_selector, widget_params) {
     console.log("Login!", widget_selector, widget_params)
 }
