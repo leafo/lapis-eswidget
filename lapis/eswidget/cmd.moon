@@ -93,11 +93,11 @@ _M.run = (args) ->
       if args.file
         widget = require path_to_module args.file
         assert is_valid_widget(widget), invalid_module_error
-        print widget\compile_es_module!
+        print assert widget\compile_es_module!
       elseif args.module
         widget = require args.module
         assert is_valid_widget(widget), invalid_module_error
-        print widget\compile_es_module!
+        print assert widget\compile_es_module!
       elseif args.package
         count = 0
         import trim from require "lapis.util"

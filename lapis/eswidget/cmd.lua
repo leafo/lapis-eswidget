@@ -129,11 +129,11 @@ _M.run = function(args)
     if args.file then
       local widget = require(path_to_module(args.file))
       assert(is_valid_widget(widget), invalid_module_error)
-      return print(widget:compile_es_module())
+      return print(assert(widget:compile_es_module()))
     elseif args.module then
       local widget = require(args.module)
       assert(is_valid_widget(widget), invalid_module_error)
-      return print(widget:compile_es_module())
+      return print(assert(widget:compile_es_module()))
     elseif args.package then
       local count = 0
       local trim
