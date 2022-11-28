@@ -8,8 +8,8 @@ export LUA_CPATH
 !esbuild_bundle_minified = |> ^ esbuild minified bundle %o^ NODE_PATH=spec/static/js $(ESBUILD) --target=es6 --log-level=warning --bundle --minify %f --outfile=%o |>
 
 : spec/views/login.moon |> !compile_js |> spec/views/login.js {package_main}
-: spec/views/user_profile.moon |> !compile_js |> spec/views/user_profile.js {package_main}
 : spec/views/user/settings.moon |> !compile_js |> spec/views/user/settings.js
+: spec/views/user_profile.moon |> !compile_js |> spec/views/user_profile.js {package_main}
 
 # package: main
 : {package_main} spec/views/user/settings.js |> !join_bundle |> spec/static/js/main.js

@@ -239,7 +239,7 @@ _M.run = (args) ->
 
             table.concat out, " "
 
-          for {:file, :module_name, :widget} in each_widget!
+          rules = for {:file, :module_name, :widget} in each_widget!
             for package in *widget.asset_packages
               package_files[package] or= {}
               table.insert package_files[package], file
@@ -257,7 +257,11 @@ _M.run = (args) ->
 
               nil
 
-            print ": #{file}#{appended_group args.tup_compile_dep_group, " | "} |> !compile_js |> #{out_file}#{bin or ""}"
+            ": #{file}#{appended_group args.tup_compile_dep_group, " | "} |> !compile_js |> #{out_file}#{bin or ""}"
+
+          table.sort rules
+          for rule in *rules
+            print rule
 
           packages = [k for k in pairs package_files]
           table.sort packages

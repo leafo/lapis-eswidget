@@ -298,33 +298,46 @@ _M.run = function(args)
         end
         return table.concat(out, " ")
       end
-      for _des_0 in each_widget() do
-        local file, module_name, widget
-        file, module_name, widget = _des_0.file, _des_0.module_name, _des_0.widget
-        local _list_0 = widget.asset_packages
-        for _index_0 = 1, #_list_0 do
-          local package = _list_0[_index_0]
-          local _update_0 = package
-          package_files[_update_0] = package_files[_update_0] or { }
-          table.insert(package_files[package], file)
-          local _ = "{package_" .. tostring(package) .. "}"
-        end
-        local out_file = input_to_output(file)
-        local bin
-        if #widget.asset_packages == 1 then
-          binned_packages[widget.asset_packages[1]] = true
-          bin = " {package_" .. tostring(widget.asset_packages[1]) .. "}"
-        else
-          local _list_1 = widget.asset_packages
-          for _index_0 = 1, #_list_1 do
-            local package = _list_1[_index_0]
+      local rules
+      do
+        local _accum_0 = { }
+        local _len_0 = 1
+        for _des_0 in each_widget() do
+          local file, module_name, widget
+          file, module_name, widget = _des_0.file, _des_0.module_name, _des_0.widget
+          local _list_0 = widget.asset_packages
+          for _index_0 = 1, #_list_0 do
+            local package = _list_0[_index_0]
             local _update_0 = package
-            unbinned_files[_update_0] = unbinned_files[_update_0] or { }
-            table.insert(unbinned_files[package], out_file)
+            package_files[_update_0] = package_files[_update_0] or { }
+            table.insert(package_files[package], file)
+            local _ = "{package_" .. tostring(package) .. "}"
           end
-          bin = nil
+          local out_file = input_to_output(file)
+          local bin
+          if #widget.asset_packages == 1 then
+            binned_packages[widget.asset_packages[1]] = true
+            bin = " {package_" .. tostring(widget.asset_packages[1]) .. "}"
+          else
+            local _list_1 = widget.asset_packages
+            for _index_0 = 1, #_list_1 do
+              local package = _list_1[_index_0]
+              local _update_0 = package
+              unbinned_files[_update_0] = unbinned_files[_update_0] or { }
+              table.insert(unbinned_files[package], out_file)
+            end
+            bin = nil
+          end
+          local _value_0 = ": " .. tostring(file) .. tostring(appended_group(args.tup_compile_dep_group, " | ")) .. " |> !compile_js |> " .. tostring(out_file) .. tostring(bin or "")
+          _accum_0[_len_0] = _value_0
+          _len_0 = _len_0 + 1
         end
-        print(": " .. tostring(file) .. tostring(appended_group(args.tup_compile_dep_group, " | ")) .. " |> !compile_js |> " .. tostring(out_file) .. tostring(bin or ""))
+        rules = _accum_0
+      end
+      table.sort(rules)
+      for _index_0 = 1, #rules do
+        local rule = rules[_index_0]
+        print(rule)
       end
       local packages
       do
