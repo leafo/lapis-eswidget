@@ -259,6 +259,15 @@ _M.run = (args) ->
           packages = [k for k in pairs package_files]
           table.sort packages
 
+          output_with_sourcemap = (package, suffix) ->
+            target = package_output_target package, suffix
+            out = shell_quote target
+
+            if args.sourcemap
+              out ..= " | #{shell_quote target .. ".map"}"
+
+            out
+
           for package in *packages
             files = package_files[package]
             table.sort files
@@ -271,16 +280,16 @@ _M.run = (args) ->
             package_inputs = "#{shell_quote package_source_target package} | #{package_dependencies package, args.tup_bundle_dep_group}"
 
             if args.minify == "only"
-              print ": #{package_inputs} |> !esbuild_bundle_minified |> #{shell_quote package_output_target package, ".min.js"}"
+              print ": #{package_inputs} |> !esbuild_bundle_minified |> #{output_with_sourcemap  package, ".min.js"}"
             else
-              print ": #{package_inputs} |> !esbuild_bundle |> #{shell_quote package_output_target package} {packages}"
+              print ": #{package_inputs} |> !esbuild_bundle |> #{output_with_sourcemap package} {packages}"
 
           -- if both minified and regular bundles are created, then do minifucation as separate step
           if args.minify == "both"
             print!
             print "# minifying packages"
             for package in *packages
-              print ": #{shell_quote package_source_target package} | {packages} |> !esbuild_bundle_minified |> #{shell_quote package_output_target package, ".min.js"}"
+              print ": #{shell_quote package_source_target package} | {packages} |> !esbuild_bundle_minified |> #{output_with_sourcemap package, ".min.js"}"
 
         when "makefile"
           print "ESBUILD=#{shell_quote args.esbuild_bin or "esbuild"}"

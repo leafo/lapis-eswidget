@@ -330,6 +330,15 @@ _M.run = function(args)
         packages = _accum_0
       end
       table.sort(packages)
+      local output_with_sourcemap
+      output_with_sourcemap = function(package, suffix)
+        local target = package_output_target(package, suffix)
+        local out = shell_quote(target)
+        if args.sourcemap then
+          out = out .. " | " .. tostring(shell_quote(target .. ".map"))
+        end
+        return out
+      end
       for _index_0 = 1, #packages do
         local package = packages[_index_0]
         local files = package_files[package]
@@ -339,9 +348,9 @@ _M.run = function(args)
         print(": " .. tostring(package_dependencies(package)) .. " |> !join_bundle |> " .. tostring(shell_quote(package_source_target(package))))
         local package_inputs = tostring(shell_quote(package_source_target(package))) .. " | " .. tostring(package_dependencies(package, args.tup_bundle_dep_group))
         if args.minify == "only" then
-          print(": " .. tostring(package_inputs) .. " |> !esbuild_bundle_minified |> " .. tostring(shell_quote(package_output_target(package, ".min.js"))))
+          print(": " .. tostring(package_inputs) .. " |> !esbuild_bundle_minified |> " .. tostring(output_with_sourcemap(package, ".min.js")))
         else
-          print(": " .. tostring(package_inputs) .. " |> !esbuild_bundle |> " .. tostring(shell_quote(package_output_target(package))) .. " {packages}")
+          print(": " .. tostring(package_inputs) .. " |> !esbuild_bundle |> " .. tostring(output_with_sourcemap(package)) .. " {packages}")
         end
       end
       if args.minify == "both" then
@@ -349,7 +358,7 @@ _M.run = function(args)
         print("# minifying packages")
         for _index_0 = 1, #packages do
           local package = packages[_index_0]
-          print(": " .. tostring(shell_quote(package_source_target(package))) .. " | {packages} |> !esbuild_bundle_minified |> " .. tostring(shell_quote(package_output_target(package, ".min.js"))))
+          print(": " .. tostring(shell_quote(package_source_target(package))) .. " | {packages} |> !esbuild_bundle_minified |> " .. tostring(output_with_sourcemap(package, ".min.js")))
         end
       end
     elseif "makefile" == _exp_1 then
