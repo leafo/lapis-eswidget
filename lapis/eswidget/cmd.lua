@@ -423,14 +423,20 @@ _M.run = function(args)
         print("", "mkdir -p \"" .. tostring(args.source_dir) .. "\"")
         print("", [[(for file in $^; do echo 'import "]] .. join(source_to_top, "'$$file'") .. [[";' | sed 's/\.js//'; done) > "$@"]])
         print()
-        print(tostring(append_output(package_output_target(package))) .. ": " .. tostring(package_source_target(package)))
-        print("", "mkdir -p \"" .. tostring(args.output_dir) .. "\"")
-        print("", "NODE_PATH=" .. tostring(shell_quote(args.source_dir)) .. " $(ESBUILD) --target=es6 --log-level=warning --bundle $< --outfile=$@")
-        print()
-        print(tostring(append_output(package_output_target(package, ".min.js"))) .. ": " .. tostring(package_source_target(package)))
-        print("", "mkdir -p \"" .. tostring(args.output_dir) .. "\"")
-        print("", "NODE_PATH=" .. tostring(shell_quote(args.source_dir)) .. " $(ESBUILD) --target=es6 --log-level=warning --minify --bundle $< --outfile=$@")
-        print()
+        local _exp_2 = args.minify
+        if "both" == _exp_2 or "none" == _exp_2 then
+          print(tostring(append_output(package_output_target(package))) .. ": " .. tostring(package_source_target(package)))
+          print("", "mkdir -p \"" .. tostring(args.output_dir) .. "\"")
+          print("", "NODE_PATH=" .. tostring(shell_quote(args.source_dir)) .. " $(ESBUILD) --target=es6 --log-level=warning --bundle $< --outfile=$@")
+          print()
+        end
+        local _exp_3 = args.minify
+        if "both" == _exp_3 or "only" == _exp_3 then
+          print(tostring(append_output(package_output_target(package, ".min.js"))) .. ": " .. tostring(package_source_target(package)))
+          print("", "mkdir -p \"" .. tostring(args.output_dir) .. "\"")
+          print("", "NODE_PATH=" .. tostring(shell_quote(args.source_dir)) .. " $(ESBUILD) --target=es6 --log-level=warning --minify --bundle $< --outfile=$@")
+          print()
+        end
       end
       print("# Misc rules")
       print("clean:")

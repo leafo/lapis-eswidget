@@ -193,6 +193,21 @@ describe "eswidget.cmd", ->
 
       assert_expected_output "simple_makefile"
 
+    it "generates customized makefile", ->
+      import run from require "lapis.eswidget.cmd"
+      run {
+        command: "generate_spec"
+        format: "makefile"
+        moonscript: true
+        widget_dirs: {"spec/views"}
+        source_dir: "spec/static/js"
+        output_dir: "spec/static"
+        esbuild_bin: "ezbuild"
+        minify: "only"
+      }
+
+      assert_expected_output "customized_makefile"
+
 describe "eswidget", ->
   sorted_pairs!
 
