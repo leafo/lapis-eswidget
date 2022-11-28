@@ -119,14 +119,20 @@ _M.run = (args) ->
         when "json"
           asset_spec = {}
 
-          for {:module_name, :widget} in each_widget!
+          for {:module_name, :widget, :file} in each_widget!
+            asset_spec.widgets or= {}
+            asset_spec.widgets[module_name] = {
+              path: file
+              name: widget\widget_name!
+              packages: widget.asset_packages
+              class_list: { widget\widget_class_list! }
+            }
+
             if next widget.asset_packages
               for package in *widget.asset_packages
-                asset_spec[package] or= {}
-                table.insert asset_spec[package], module_name
-            else
-              asset_spec._unassigned or= {}
-              table.insert asset_spec._unassigned, module_name
+                asset_spec.packages or= {}
+                asset_spec.packages[package] or= {}
+                table.insert asset_spec.packages[package], module_name
 
           print to_json asset_spec
 

@@ -169,19 +169,26 @@ _M.run = function(args)
     if "json" == _exp_1 then
       local asset_spec = { }
       for _des_0 in each_widget() do
-        local module_name, widget
-        module_name, widget = _des_0.module_name, _des_0.widget
+        local module_name, widget, file
+        module_name, widget, file = _des_0.module_name, _des_0.widget, _des_0.file
+        asset_spec.widgets = asset_spec.widgets or { }
+        asset_spec.widgets[module_name] = {
+          path = file,
+          name = widget:widget_name(),
+          packages = widget.asset_packages,
+          class_list = {
+            widget:widget_class_list()
+          }
+        }
         if next(widget.asset_packages) then
           local _list_0 = widget.asset_packages
           for _index_0 = 1, #_list_0 do
             local package = _list_0[_index_0]
+            asset_spec.packages = asset_spec.packages or { }
             local _update_0 = package
-            asset_spec[_update_0] = asset_spec[_update_0] or { }
-            table.insert(asset_spec[package], module_name)
+            asset_spec.packages[_update_0] = asset_spec.packages[_update_0] or { }
+            table.insert(asset_spec.packages[package], module_name)
           end
-        else
-          asset_spec._unassigned = asset_spec._unassigned or { }
-          table.insert(asset_spec._unassigned, module_name)
         end
       end
       return print(to_json(asset_spec))

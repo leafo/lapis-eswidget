@@ -15,5 +15,8 @@ local: build
 assetspec.tup::
 	moon bin/lapis-eswidget.moon generate_spec --widget-dirs=spec/views --moonscript --format=tup > assetspec.tup
 
+assetspec.json::
+	moon bin/lapis-eswidget.moon generate_spec --widget-dirs=spec/views --moonscript --format=json | jq
+
 compile_main::
 	moon bin/lapis-eswidget.moon compile_js --widget-dirs=spec/views --moonscript --package main
