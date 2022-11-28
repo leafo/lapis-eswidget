@@ -5,7 +5,7 @@ export LUA_CPATH
 !compile_js = |> ^ compile_js %f > %o^ lapis-eswidget compile_js --moonscript --file %f > %o |>
 !join_bundle = |> ^ join bundle %o^ (for file in %f; do echo 'import "../../../'$file'";' | sed 's/\.js//'; done) > %o |>
 !esbuild_bundle = |> ^ esbuild bundle %o^ NODE_PATH=spec/static/js $(ESBUILD) --target=es6 --log-level=warning --bundle %f --outfile=%o |>
-!esbuild_bundle_minified = |> ^ esbuild minified bundle %o^ NODE_PATH=spec/static/js $(ESBUILD) --target=es6 --log-level=warning --minify --bundle %f --outfile=%o |>
+!esbuild_bundle_minified = |> ^ esbuild minified bundle %o^ NODE_PATH=spec/static/js $(ESBUILD) --target=es6 --log-level=warning --bundle --minify %f --outfile=%o |>
 
 : spec/views/login.moon |> !compile_js |> spec/views/login.js {package_main}
 : spec/views/user_profile.moon |> !compile_js |> spec/views/user_profile.js {package_main}

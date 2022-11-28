@@ -148,6 +148,7 @@ describe "eswidget.cmd", ->
         tup_compile_dep_group: "$(TOP)/<moon>"
         tup_bundle_dep_group: "$(TOP)/<coffee>"
         minify: "only"
+        sourcemap: true
       }
 
       assert_expected_output "customized_tupfile.tup"

@@ -241,13 +241,22 @@ _M.run = function(args)
       print()
       print("!compile_js = |> ^ compile_js %f > %o^ lapis-eswidget compile_js " .. tostring(args.moonscript and "--moonscript" or "") .. " --file %f > %o |>")
       print([[!join_bundle = |> ^ join bundle %o^ (for file in %f; do echo 'import "]] .. join(source_to_top, "'$file'") .. [[";' | sed 's/\.js//'; done) > %o |>]])
+      local esbuild_args = {
+        "--target=es6",
+        "--log-level=warning",
+        "--bundle"
+      }
+      if args.sourcemap then
+        table.insert(esbuild_args, "--sourcemap")
+      end
+      esbuild_args = table.concat(esbuild_args, " ")
       local _exp_2 = args.minify
       if "both" == _exp_2 or "none" == _exp_2 then
-        print("!esbuild_bundle = |> ^ esbuild bundle %o^ NODE_PATH=" .. tostring(shell_quote(args.source_dir)) .. " $(ESBUILD) --target=es6 --log-level=warning --bundle %f --outfile=%o |>")
+        print("!esbuild_bundle = |> ^ esbuild bundle %o^ NODE_PATH=" .. tostring(shell_quote(args.source_dir)) .. " $(ESBUILD) " .. tostring(esbuild_args) .. " %f --outfile=%o |>")
       end
       local _exp_3 = args.minify
       if "both" == _exp_3 or "only" == _exp_3 then
-        print("!esbuild_bundle_minified = |> ^ esbuild minified bundle %o^ NODE_PATH=" .. tostring(shell_quote(args.source_dir)) .. " $(ESBUILD) --target=es6 --log-level=warning --minify --bundle %f --outfile=%o |>")
+        print("!esbuild_bundle_minified = |> ^ esbuild minified bundle %o^ NODE_PATH=" .. tostring(shell_quote(args.source_dir)) .. " $(ESBUILD) " .. tostring(esbuild_args) .. " --minify %f --outfile=%o |>")
       end
       print()
       local appended_group

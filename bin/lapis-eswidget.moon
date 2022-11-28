@@ -25,6 +25,7 @@ with parser\command "generate_spec", "Scan widgets and generate specification fo
 
   \option("--format", "Output fromat for generated asset spec file")\choices({"json", "tup", "makefile"})\default "json"
   \option("--minify", "Set how minified bundles should be generated")\choices({"both", "only", "none"})\default "both"
+  \flag("--sourcemap", "Enable sourcemap for bundled outputs")
 
   \option("--source-dir", "The working directory for source files (Will be set to NODE_PATH for build)")\default "static/js"
   \option("--output-dir", "Destination of final compiled asset packages")\default "static"

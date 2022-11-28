@@ -39,6 +39,7 @@ do
     "only",
     "none"
   }):default("both")
+  _with_0:flag("--sourcemap", "Enable sourcemap for bundled outputs")
   _with_0:option("--source-dir", "The working directory for source files (Will be set to NODE_PATH for build)"):default("static/js")
   _with_0:option("--output-dir", "Destination of final compiled asset packages"):default("static")
   _with_0:option("--esbuild-bin", "Set the path to the esbuild binary. When empty, will use the ESBUILD tup environment variable")
