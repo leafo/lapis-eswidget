@@ -146,6 +146,7 @@ window.init_Login = function(widget_selector, widget_params) {
         source_dir: "spec/static/js"
         output_dir: "spec/static"
         esbuild_bin: "ezbuild"
+        css_packages: {"main"}
         tup_compile_dep_group: "$(TOP)/<moon>"
         tup_bundle_dep_group: "$(TOP)/<coffee>"
         minify: "only"
