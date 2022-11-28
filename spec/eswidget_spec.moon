@@ -205,6 +205,7 @@ describe "eswidget.cmd", ->
         output_dir: "spec/static"
         esbuild_bin: "ezbuild"
         minify: "only"
+        sourcemap: true
       }
 
       assert_expected_output "customized_makefile"

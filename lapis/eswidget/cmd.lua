@@ -337,7 +337,7 @@ _M.run = function(args)
         print()
         print("# package: " .. tostring(package))
         print(": " .. tostring(package_dependencies(package)) .. " |> !join_bundle |> " .. tostring(shell_quote(package_source_target(package))))
-        local package_inputs = tostring(shell_quote(package_source_target(package))) .. tostring(appended_group(args.tup_bundle_dep_group, " | "))
+        local package_inputs = tostring(shell_quote(package_source_target(package))) .. " | " .. tostring(package_dependencies(package, args.tup_bundle_dep_group))
         if args.minify == "only" then
           print(": " .. tostring(package_inputs) .. " |> !esbuild_bundle_minified |> " .. tostring(shell_quote(package_output_target(package, ".min.js"))))
         else

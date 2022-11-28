@@ -13,8 +13,8 @@ ESBUILD=ezbuild
 
 # package: main
 : {package_main} spec/views/user/settings.js |> !join_bundle |> spec/static/js/main.js
-: spec/static/js/main.js | $(TOP)/<coffee> |> !esbuild_bundle_minified |> spec/static/main.min.js
+: spec/static/js/main.js | {package_main} spec/views/user/settings.js $(TOP)/<coffee> |> !esbuild_bundle_minified |> spec/static/main.min.js
 
 # package: settings
 : spec/views/user/settings.js |> !join_bundle |> spec/static/js/settings.js
-: spec/static/js/settings.js | $(TOP)/<coffee> |> !esbuild_bundle_minified |> spec/static/settings.min.js
+: spec/static/js/settings.js | spec/views/user/settings.js $(TOP)/<coffee> |> !esbuild_bundle_minified |> spec/static/settings.min.js

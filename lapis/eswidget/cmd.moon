@@ -268,7 +268,7 @@ _M.run = (args) ->
             -- TODO: this intermediate file may be unecessary, we can consider piping the result directly into esbuild
             print ": #{package_dependencies package} |> !join_bundle |> #{shell_quote package_source_target package}"
 
-            package_inputs = "#{shell_quote package_source_target package}#{appended_group args.tup_bundle_dep_group, " | "}"
+            package_inputs = "#{shell_quote package_source_target package} | #{package_dependencies package, args.tup_bundle_dep_group}"
 
             if args.minify == "only"
               print ": #{package_inputs} |> !esbuild_bundle_minified |> #{shell_quote package_output_target package, ".min.js"}"
