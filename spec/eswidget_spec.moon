@@ -427,7 +427,9 @@ window.get_started = function(widget_selector, widget_params) {
     it "validates from render props", ->
       import render_prop, RENDER_PROPS_KEY from require "lapis.eswidget.prop_types"
 
-      did_render = false
+      -- NOTE: we do it this way because in Lua5.1 the function locker can not
+      -- bind the closure, and it has a copy of the closure
+      did_render = {}
 
       class HasRenderProps extends require "lapis.eswidget"
         -- NOTE: Do not add any transformsations to this spec, we want to test
@@ -439,7 +441,7 @@ window.get_started = function(widget_selector, widget_params) {
         }
 
         content: =>
-          did_render = true
+          did_render.rendered = true
 
           assert.nil getmetatable(@props), "@props should NOT have a metatable"
 
@@ -448,9 +450,11 @@ window.get_started = function(widget_selector, widget_params) {
             name: "cool"
           }, @props
 
+          div "hello world"
+
 
       do
-        did_render = false
+        did_render.rendered = false
         widget = HasRenderProps { id: 55 }
 
         -- render props should be created
@@ -461,14 +465,13 @@ window.get_started = function(widget_selector, widget_params) {
           name: "cool"
         }
 
-        widget\render_to_string!
-        assert.true did_render
+        assert.same {rendered: true}, did_render, "widget should have rendered"
 
         -- ensure that props was restored
         assert.same {id: 55}, widget.props
 
       do
-        did_render = false
+        did_render.rendered = false
         widget = HasRenderProps { id: 55, name: "cool" }
         initial_props = widget.props
 
@@ -481,7 +484,7 @@ window.get_started = function(widget_selector, widget_params) {
         }
 
         widget\render_to_string!
-        assert.true did_render
+        assert.same {rendered: true}, did_render, "widget should have rendered"
 
         -- ensure that props aren't changed
         assert.same {id: 55, name: "cool"}, widget.props
@@ -491,8 +494,6 @@ window.get_started = function(widget_selector, widget_params) {
     it "handles error for missing props", ->
       import render_prop, RENDER_PROPS_KEY from require "lapis.eswidget.prop_types"
 
-      did_render = false
-
       class HasRenderProps extends require "lapis.eswidget"
         @prop_types: {
           name: render_prop types.string / "WHOA"
@@ -500,7 +501,7 @@ window.get_started = function(widget_selector, widget_params) {
         }
 
         content: =>
-          did_render = true
+          span "okay"
 
       assert.has_error(
         -> HasRenderProps { }
