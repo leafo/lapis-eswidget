@@ -22,6 +22,7 @@ build = {
   modules = {
     ["lapis.eswidget"] = "lapis/eswidget.lua",
     ["lapis.eswidget.cmd"] = "lapis/eswidget/cmd.lua",
+    ["lapis.eswidget.prop_types"] = "lapis/eswidget/prop_types.lua",
     ["lapis.eswidget.render_flow"] = "lapis/eswidget/render_flow.lua",
     ["lapis.eswidget.version"] = "lapis/eswidget/version.lua",
   },
