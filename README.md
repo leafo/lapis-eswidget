@@ -66,7 +66,7 @@ sources must be specified:
 
 * `--file` - Load by the filename of a Lua module that contains an ESWidget (eg. `views/profile.lua`)
 * `--module` - Load by Lua module name (eg. `views.profile`)
-* `--package` - Will scan filesystem (see `--widget-dirs`) and concatenate the output of all lua modules that extend ESWidget and specify the package in `@asset_packages`
+* `--package` - Will scan filesystem (see `--widget-dirs`) and concatenate the output of all Lua modules that extend ESWidget and specify the package in `@asset_packages`
 
 If you want to enable loading MoonScript modules then you must pass `--moonscript`
 
@@ -110,6 +110,11 @@ Class
 * `@widget_class_list` (function) - Return variable number of arguments for the list of CSS classes this widget will have when rendered, calculated from the inheritance chain
 * `@compile_es_module` (function) - Compile the static `es_module` initialization code for the widget
 
+Class properties
+
+* `@es_module` (string, default: `nil`) - The initialization JavaScript for the widget
+* `@prop_types` (table, default: `nil`) - Enables property validation for the widget, with a table mapping names to a tableshape type
+
 Instance
 
 * `widget_id` (function) - Returns a string with a unique ID for the widget, of the format `{widget_name}_{random_number}`
@@ -120,15 +125,14 @@ Instance
 * `content` (function)
 * `inner_content` (function, default: empty function) - The render function of the widget called inside of the enclosing element
 
-
 ### Static vs Instance code
 
-There are two kinds of data assoaciated with each widget during it's render
+There are two kinds of data associated with each widget during it's render
 lifecycle:
 
 **Static** code and data is unchanging and can be compiled and used during the
 ahead-of-time building of packages. This includes things like the ES Module
-initializatioon function (`@@es_module`), CSS classnames.
+initialization function (`@@es_module`), CSS classnames.
 
 **Instance** code and data is only available during the rendering of a widget
 during a request. This could include things like the dynamically created widget
@@ -139,16 +143,16 @@ initialization.
 
 The `ESWidget` class provides a default `content` method that will
 automatically generate a class and ID for an HTML element to allow it to be
-uniquely identified by JavaScript initializion, and generally identified by CSS
+uniquely identified by JavaScript initialization, and generally identified by CSS
 selectors.
 
 To user encapsulation, the `inner_content` method must be implemented instead
 of the `content` method on the widget sub-class, otherwise the enclosing
 element logic will be overwritten.
 
-The generated class names will utilize the entire class hierachy:
+The generated class names will utilize the entire class hierarchy:
 
-```
+```moonscript
 class One extends require "lapis.eswidget"
 class Two extends One
 class Three extends Two
@@ -161,7 +165,69 @@ Three\widget_class_list! -->  "three_widget", "two_widget", "one_widget"
 
 ### Parameter Validation
 
-TODO: `render_types` and `prop_types`
+The base ESWidget class has a mechanism to validate inputs passed into the
+Widget. The `prop_types` field takes a table of names and *tableshape* types
+to be used to validate the values of the inputs.
+
+
+```moonscript
+class MyThing extends require "lapis.eswidget"
+	@prop_types: {
+		name: types.string -- this is a required input
+		banned: types.boolean\is_optional!
+	}
+
+	inner_content: =>
+		h2 @props.name
+		if @props.banned
+			p "You are banned"
+		else
+			p "You are not banned"
+
+widget1 = MyThing name: "Cool", banned: true
+
+widget2 = MyThing name: 2323 --> this will fail with an error
+```
+
+Providing `@prop_types` will change the default behavior of the constructor. As
+a reminder, the default `Widget` constructor copies every field from the
+argument object onto the widget instance. When `@prop_types` is used, the
+inputs will be validated and collected into an object called `props` that will
+be stored on the widget instance.  Eg. you would access name with `@props.name`
+instead of `@name` in the example above.
+
+By default `prop_types` will only validate the object passed into the
+constructor.  A widget can actually receive a second source of inputs though.
+In Lapis, when a widget renders, an internal helper chain is set that includes
+a reference to the *Request* object. This is how you can access things like
+`@url_for`, and it is also how you access fields that are set during the
+request action handler.
+
+In order to validate render-time inputs, you must flag the prop type with the
+`render_prop` function. This will allow the prop_type to validate from the
+render helper chain if the value was not provided directly to the constructor.
+The result will be copied into the `props` field regardless.
+
+
+```moonscript
+import types from require "tableshape"
+import render_prop from require "lapis.eswidget.prop_types"
+
+class UserProfile extends require "lapis.eswidget"
+	@prop_types: {
+		language: types.string -- this is a required input
+		user: render_prop types.table
+	}
+
+
+-- the `user` field provided in the constructor will take precedence. No
+-- additional validation is done at render time
+profile1 = UserProfile language: "en", user: {id: 10}
+
+-- the `user` field here will be validated when the widget is rendered, so this
+-- will not throw an error
+profile2 = UserProfile language: "en"
+```
 
 ### Asset Packages
 
@@ -171,7 +237,7 @@ by default, if you wish to aggregate assets then you will need to provide at
 least one asset package.
 
 The end result of bundling will result in a file (or files) containing output
-from widgets that target that package, eg `main` → `main.js`, `main.css`
+from widgets that target that package, eg. `main` → `main.js`, `main.css`
 
 Multiple asset packages can be used for splitting code at a high level to
 reduce total bundle sizes.
@@ -180,6 +246,8 @@ The first asset package in the list of asset packages is used to calculate the
 canonical path for Associated Files (see below).
 
 ### Associated Files
+
+**TODO**: This is not exposed currently
 
 An associated file is a file related to the widget that is manually written (as
 opposed to generated by the build system). These files have code
