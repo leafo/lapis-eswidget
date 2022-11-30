@@ -389,23 +389,22 @@ window.get_started = function(widget_selector, widget_params) {
     import types from require "tableshape"
 
     it "validates simple props", ->
-      class Something extends require "lapis.eswidget"
+      class SimpleProps extends require "lapis.eswidget"
         @prop_types: {
           id: types.number / (n) -> n + 1
           name: types.string
         }
 
       assert.has_error(
-        -> Something {}
-        [[Something: field "id": expected type "number", got "nil"; field "name": expected type "string", got "nil"]]
+        -> SimpleProps {}
+        [[SimpleProps: field "id": expected type "number", got "nil"; field "name": expected type "string", got "nil"]]
       )
 
-      w = Something { name: "hello", id: 2323 }
+      w = SimpleProps { name: "hello", id: 2323 }
       assert.same {
         name: "hello"
         id: 2324
       }, w.props
-
 
     it "validates props with type object", ->
       class Something extends require "lapis.eswidget"
@@ -424,4 +423,123 @@ window.get_started = function(widget_selector, widget_params) {
         thing: true
         id: 2323
       }, w.props
+
+    it "validates from render props", ->
+      import render_prop, RENDER_PROPS_KEY from require "lapis.eswidget.prop_types"
+
+      did_render = false
+
+      class HasRenderProps extends require "lapis.eswidget"
+        -- NOTE: Do not add any transformsations to this spec, we want to test
+        -- passing through object to ensure all props make are copied over ,
+        -- and aren't in the metatable.
+        @prop_types: {
+          name: render_prop types.string
+          id: types.number
+        }
+
+        content: =>
+          did_render = true
+
+          assert.nil getmetatable(@props), "@props should NOT have a metatable"
+
+          assert.same {
+            id: 55
+            name: "cool"
+          }, @props
+
+
+      do
+        did_render = false
+        widget = HasRenderProps { id: 55 }
+
+        -- render props should be created
+        assert.truthy widget[RENDER_PROPS_KEY]
+
+        -- include a helper that provides the render prop
+        widget\include_helper {
+          name: "cool"
+        }
+
+        widget\render_to_string!
+        assert.true did_render
+
+        -- ensure that props was restored
+        assert.same {id: 55}, widget.props
+
+      do
+        did_render = false
+        widget = HasRenderProps { id: 55, name: "cool" }
+        initial_props = widget.props
+
+        -- render props should not be created
+        assert.nil widget[RENDER_PROPS_KEY]
+
+        -- include a helper that provides the render prop, but it would be ignored
+        widget\include_helper {
+          name: "sir"
+        }
+
+        widget\render_to_string!
+        assert.true did_render
+
+        -- ensure that props aren't changed
+        assert.same {id: 55, name: "cool"}, widget.props
+        assert widget.props == initial_props
+
+
+    it "handles error for missing props", ->
+      import render_prop, RENDER_PROPS_KEY from require "lapis.eswidget.prop_types"
+
+      did_render = false
+
+      class HasRenderProps extends require "lapis.eswidget"
+        @prop_types: {
+          name: render_prop types.string / "WHOA"
+          id: types.number
+        }
+
+        content: =>
+          did_render = true
+
+      assert.has_error(
+        -> HasRenderProps { }
+        [[HasRenderProps: field "id": expected type "number", got "nil"]]
+      )
+
+      do -- render with no helper
+        widget = HasRenderProps { id: 54 }
+        assert.has_error(
+          -> widget\render_to_string!
+          [[HasRenderProps: field "name": expected type "string", got "nil"]]
+        )
+
+      do -- render with no helpers that satisfiy requirement
+        widget = HasRenderProps { id: 54 }
+        widget\include_helper { job: false }
+        assert.has_error(
+          -> widget\render_to_string!
+          [[HasRenderProps: field "name": expected type "string", got "nil"]]
+        )
+
+      do -- render with helper that has wrong type
+        widget = HasRenderProps { id: 54 }
+        widget\include_helper { job: false }
+        widget\include_helper { name: true }
+
+        assert.has_error(
+          -> widget\render_to_string!
+          [[HasRenderProps: field "name": expected type "string", got "boolean"]]
+        )
+
+      do -- use constructor value as precedence
+        widget = HasRenderProps { id: 54, name: "hello" }
+        assert.same nil, widget[RENDER_PROPS_KEY] -- no render props assigned, satisfied via constructor
+        widget\render_to_string! -- no error
+
+        assert.same {
+          id: 54
+          name: "WHOA"
+        }, widget.props
+
 

@@ -18,22 +18,71 @@ end
 local to_json
 to_json = require("lapis.util").to_json
 local convert_prop_types
-convert_prop_types = function(cls, tbl)
-  local t = types.shape(tbl, {
-    check_all = true
-  })
-  return types.annotate(t, {
-    format_error = function(self, value, err)
-      return tostring(cls.__name) .. ": " .. tostring(err)
+do
+  local resolve_prop_type
+  resolve_prop_type = function(fn, ...)
+    if type(fn) == "function" then
+      return fn(...)
+    else
+      return fn
     end
-  })
+  end
+  convert_prop_types = function(cls, tbl)
+    local resolved_types
+    do
+      local _tbl_0 = { }
+      for k, v in pairs(tbl) do
+        _tbl_0[k] = resolve_prop_type(v, k, cls)
+      end
+      resolved_types = _tbl_0
+    end
+    local t = types.shape(resolved_types, {
+      check_all = true
+    })
+    return types.annotate(t, {
+      format_error = function(self, value, err)
+        return tostring(cls.__name) .. ": " .. tostring(err)
+      end
+    })
+  end
 end
+local RENDER_PROPS_KEY
+RENDER_PROPS_KEY = require("lapis.eswidget.prop_types").RENDER_PROPS_KEY
 local ESWidget
 do
   local _class_0
   local _parent_0 = Widget
   local _base_0 = {
     widget_enclosing_element = "div",
+    render = function(self, ...)
+      local props = self.props
+      do
+        local render_props = self[RENDER_PROPS_KEY]
+        if render_props then
+          local helper_scope = setmetatable({ }, {
+            __index = function(helper_scope, name)
+              do
+                local v = self:_find_helper(name)
+                helper_scope[name] = v
+                local _ = v
+                return v
+              end
+            end
+          })
+          self.props = assert(render_props:transform(helper_scope))
+          if self.props == helper_scope then
+            setmetatable(self.props, nil)
+          end
+          if props then
+            for k, v in pairs(props) do
+              self.props[k] = v
+            end
+          end
+        end
+      end
+      _class_0.__parent.__base.render(self, ...)
+      self.props = props
+    end,
     widget_id = function(self)
       if not (self._widget_id) then
         self._widget_id = tostring(self.__class:widget_name()) .. "_" .. tostring(math.random(0, 10000000))
@@ -98,13 +147,20 @@ do
   _class_0 = setmetatable({
     __init = function(self, props, ...)
       if self.__class.prop_types then
-        local _
+        local state
         if is_type(self.__class.prop_types) then
-          self.props, _ = assert(self.__class.prop_types:transform(props or { }))
+          self.props, state = assert(self.__class.prop_types:transform(props or { }))
         elseif type(self.__class.prop_types) == "table" then
-          self.props, _ = assert(convert_prop_types(self.__class, self.__class.prop_types):transform(props or { }))
+          self.__class.prop_types = convert_prop_types(self.__class, self.__class.prop_types)
+          self.props, state = assert(self.__class.prop_types:transform(props or { }))
         else
-          self.props, _ = error("Got prop_types of unknown type")
+          self.props, state = error("Got prop_types of unknown type")
+        end
+        do
+          local render_props = state and state[RENDER_PROPS_KEY]
+          if render_props then
+            self[RENDER_PROPS_KEY] = convert_prop_types(self.__class, render_props)
+          end
         end
       else
         return _class_0.__parent.__init(self, props, ...)

@@ -10,15 +10,26 @@ unless is_mixins_class
 import to_json from require "lapis.util"
 
 -- convert bare table to a tableshape object for handling prop_types
-convert_prop_types = (cls, tbl) ->
-  t = types.shape tbl, {
-    check_all: true
-  }
+-- this supports a lazy prop type that converts functions to types
+convert_prop_types = do
+  resolve_prop_type = (fn, ...) ->
+    if type(fn) == "function"
+      fn ...
+    else
+      fn
 
-  types.annotate t, {
-    format_error: (value, err) => "#{cls.__name}: #{err}"
-  }
+  (cls, tbl) ->
+    resolved_types = {k, resolve_prop_type(v, k, cls) for k,v in pairs tbl}
 
+    t = types.shape resolved_types, {
+      check_all: true
+    }
+
+    types.annotate t, {
+      format_error: (value, err) => "#{cls.__name}: #{err}"
+    }
+
+import RENDER_PROPS_KEY from require "lapis.eswidget.prop_types"
 
 class ESWidget extends Widget
   widget_enclosing_element: "div"
@@ -71,21 +82,52 @@ class ESWidget extends Widget
       "}"
     }, "\n"
 
+  render: (...) =>
+    props = @props -- remember props parsed from constructor
+
+    if render_props = @[RENDER_PROPS_KEY]
+      helper_scope = setmetatable {}, __index: (helper_scope, name) ->
+        -- NOTE: we *must* store the result on scope directly, as that will become the props object
+        with v = @_find_helper name
+          helper_scope[name] = v
+          v
+
+      @props = assert render_props\transform helper_scope
+
+      -- if object was passed through, we need to remove metatable
+      if @props == helper_scope
+        setmetatable @props, nil
+
+      if props -- merge into newly parsed props, there should be no key conflicts so order doesn't matter
+        for k,v in pairs props
+          @props[k] = v
+
+    super ...
+
+    -- restore original props object
+    @props = props
+
+    return
+
   new: (props, ...) =>
     if @@prop_types
-      @props, _ = if is_type @@prop_types
+      @props, state = if is_type @@prop_types
         assert @@prop_types\transform props or {}
       elseif type(@@prop_types) == "table"
-        assert convert_prop_types(@@, @@prop_types)\transform props or {}
+        -- lazily convert prop types
+        @@prop_types = convert_prop_types @@, @@prop_types
+        assert @@prop_types\transform props or {}
       else
         error "Got prop_types of unknown type"
 
-      -- -- TOOD: if the prop types generates any state we can just store it directly
-      -- -- into the instance. Is this a bad idea? What if things generated state
-      -- -- as side effect, they will need to be scoped
+      if render_props = state and state[RENDER_PROPS_KEY]
+        @[RENDER_PROPS_KEY] = convert_prop_types @@, render_props
+
+      -- TODO: should we have a method to copy items from props to self?
       -- if state
       --   for k, v in pairs state
-      --     @[k] = v
+      --     if type(k) == "string"
+      --       @[k] = v
 
     else
       super props, ...
