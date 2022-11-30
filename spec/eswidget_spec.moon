@@ -465,6 +465,7 @@ window.get_started = function(widget_selector, widget_params) {
           name: "cool"
         }
 
+        widget\render_to_string!
         assert.same {rendered: true}, did_render, "widget should have rendered"
 
         -- ensure that props was restored
