@@ -172,17 +172,17 @@ to be used to validate the values of the inputs.
 
 ```moonscript
 class MyThing extends require "lapis.eswidget"
-	@prop_types: {
-		name: types.string -- this is a required input
-		banned: types.boolean\is_optional!
-	}
+  @prop_types: {
+    name: types.string -- this is a required input
+    banned: types.boolean\is_optional!
+  }
 
-	inner_content: =>
-		h2 @props.name
-		if @props.banned
-			p "You are banned"
-		else
-			p "You are not banned"
+  inner_content: =>
+    h2 @props.name
+    if @props.banned
+      p "You are banned"
+    else
+      p "You are not banned"
 
 widget1 = MyThing name: "Cool", banned: true
 
@@ -214,10 +214,10 @@ import types from require "tableshape"
 import render_prop from require "lapis.eswidget.prop_types"
 
 class UserProfile extends require "lapis.eswidget"
-	@prop_types: {
-		language: types.string -- this is a required input
-		user: render_prop types.table
-	}
+  @prop_types: {
+    language: types.string -- this is a required input
+    user: render_prop types.table
+  }
 
 
 -- the `user` field provided in the constructor will take precedence. No
