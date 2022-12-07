@@ -2,7 +2,7 @@
 argparse = require "argparse"
 import trim from require "lapis.util"
 
-parser = argparse "widget_helper.moon",
+parser = argparse "lapis-eswidget",
   "Widget asset compilation and build generation"
 
 parser\command_target "command"

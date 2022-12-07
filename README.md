@@ -53,12 +53,40 @@ lapis-eswidget compile_js --package main
 The `lapis-eswidget` command can be used to work with widget modules,
 extracting code or generating instructions to create the final bundles.
 
+    Usage: lapis-eswidget [-h] [--moonscript] <command> ...
+
+    Widget asset compilation and build generation
+
+    Options:
+       -h, --help            Show this help message and exit.
+       --moonscript          Enable MoonScript module loading
+
+    Commands:
+       compile_js            Compile a single module or entire package to JavaScript
+       generate_spec         Scan widgets and generate specification for compiling bundles
+       debug                 Show any extractable information about a widget module
+
 The following commands are included
 
 ### `compile_js`
 
 ```
 lapis-eswidget compile_js --help
+
+Usage: lapis-eswidget compile_js [-h] [--module <module>]
+       [--file <file>] [--package <package>]
+       [--widget-dirs <widget_dirs>]
+
+Compile a single module or entire package to JavaScript
+
+Options:
+   -h, --help            Show this help message and exit.
+   --module <module>
+   --file <file>
+   --package <package>
+   --widget-dirs <widget_dirs>
+                         Paths where widgets are located. Only used for compiling by --package (default: views,widgets)
+
 ```
 
 Compile a single module or entire package to JavaScript. One of the following
@@ -74,6 +102,39 @@ If you want to enable loading MoonScript modules then you must pass `--moonscrip
 
 ```
 lapis-eswidget generate_spec --help
+
+Usage: lapis-eswidget generate_spec [-h] [--widget-dirs <widget_dirs>]
+       [--format {json,tup,makefile}] [--minify {both,only,none}]
+       [--sourcemap] [--css-packages <css_packages>]
+       [--source-dir <source_dir>] [--output-dir <output_dir>]
+       [--esbuild-bin <esbuild_bin>]
+       [--tup-compile-dep-group <tup_compile_dep_group>]
+       [--tup-bundle-dep-group <tup_bundle_dep_group>]
+
+Scan widgets and generate specification for compiling bundles
+
+Options:
+   -h, --help            Show this help message and exit.
+   --widget-dirs <widget_dirs>
+                         Paths where widgets are located (default: views,widgets)
+   --format {json,tup,makefile}
+                         Output fromat for generated asset spec file (default: json)
+   --minify {both,only,none}
+                         Set how minified bundles should be generated (default: both)
+   --sourcemap           Enable sourcemap for bundled outputs
+   --css-packages <css_packages>
+                         Instruct build that css files will be generated for listed packages
+   --source-dir <source_dir>
+                         The working directory for source files (NODE_PATH will be set to this during bundle) (default: static/js)
+   --output-dir <output_dir>
+                         Destination of final compiled asset packages (default: static)
+   --esbuild-bin <esbuild_bin>
+                         Set the path to the esbuild binary. When empty, will use the ESBUILD tup environment variable
+   --tup-compile-dep-group <tup_compile_dep_group>
+                         Dependency group used during the widget -> js compile phase (eg. $(TOP)/<moon>)
+   --tup-bundle-dep-group <tup_bundle_dep_group>
+                         Dependency group used during esbuild bundling phase (eg. $(TOP)/<coffee>)
+
 ```
 
 Scan directories for widgets that extend from `ESWidget` and generate a
@@ -93,7 +154,6 @@ Display information about a single widget
 
 Any widgets you wish to be supported by this library must extend from
 `ESWidget`.
-
 
 ```moonscript
 ESWidget = require "lapis.eswidget"
