@@ -16,13 +16,13 @@ local: build
 	luarocks --lua-version=5.1 make --local lapis-eswidget-dev-1.rockspec
 
 assetspec.tup::
-	moon bin/lapis-eswidget.moon generate_spec --widget-dirs=spec/views --moonscript --format=tup --sourcemap --css-packages=main > $@
+	moon bin/lapis-eswidget.moon generate_spec --widget-dirs=spec/views --moonscript --format=tup --metafile --sourcemap --css-packages=main > $@
 
 assetspec.json::
 	moon bin/lapis-eswidget.moon generate_spec --widget-dirs=spec/views --moonscript --format=json --css-packages=main | jq
 
 assetspec.make::
-	moon bin/lapis-eswidget.moon generate_spec --widget-dirs=spec/views --moonscript --format=makefile --sourcemap --css-packages=main > $@
+	moon bin/lapis-eswidget.moon generate_spec --widget-dirs=spec/views --moonscript --format=makefile --metafile --sourcemap --css-packages=main > $@
 
 compile_main::
 	moon bin/lapis-eswidget.moon compile_js --widget-dirs=spec/views --moonscript --package main
