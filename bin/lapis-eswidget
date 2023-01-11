@@ -2,7 +2,7 @@
 local argparse = require("argparse")
 local trim
 trim = require("lapis.util").trim
-local parser = argparse("lapis-eswidget", "Widget asset compilation and build generation")
+local parser = argparse("lapis-eswidget", "Widget asset compilation and build generation\nVersion: " .. tostring(require("lapis.eswidget.version")))
 parser:command_target("command")
 parser:flag("--moonscript", "Enable MoonScript module loading")
 local to_array

@@ -3,7 +3,7 @@ argparse = require "argparse"
 import trim from require "lapis.util"
 
 parser = argparse "lapis-eswidget",
-  "Widget asset compilation and build generation"
+  "Widget asset compilation and build generation\nVersion: #{require "lapis.eswidget.version"}"
 
 parser\command_target "command"
 
