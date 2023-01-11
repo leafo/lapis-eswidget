@@ -36,6 +36,7 @@ do
     "none"
   }):default("both")
   _with_0:flag("--sourcemap", "Enable sourcemap for bundled outputs")
+  _with_0:flag("--metafile", "Enable metafile for bundled outputs")
   _with_0:option("--css-packages", "Instruct build that css files will be generated for listed packages"):convert(to_array)
   _with_0:option("--source-dir", "The working directory for source files (NODE_PATH will be set to this during bundle)"):default("static/js")
   _with_0:option("--output-dir", "Destination of final compiled asset packages"):default("static")

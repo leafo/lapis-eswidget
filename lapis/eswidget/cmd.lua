@@ -257,13 +257,34 @@ _M.run = function(args)
       print()
       print("!compile_js = |> ^ compile_js %f > %o^ lapis-eswidget compile_js " .. tostring(args.moonscript and "--moonscript" or "") .. " --file %f > %o |>")
       print([[!join_bundle = |> ^ join bundle %o^ (for file in %f; do echo 'import "]] .. join(source_to_top, "'$file'") .. [[";' | sed 's/\.js//'; done) > %o |>]])
+      local metafile_flag
+      if args.metafile then
+        metafile_flag = "--metafile=%O-metafile.json"
+      end
+      local esbuild_command_prefix = "NODE_PATH=" .. tostring(shell_quote(args.source_dir)) .. " $(ESBUILD) " .. tostring(esbuild_args)
       local _exp_2 = args.minify
       if "both" == _exp_2 or "none" == _exp_2 then
-        print("!esbuild_bundle = |> ^ esbuild bundle %o^ NODE_PATH=" .. tostring(shell_quote(args.source_dir)) .. " $(ESBUILD) " .. tostring(esbuild_args) .. " %f --outfile=%o |>")
+        local cmd_parts = {
+          "!esbuild_bundle = |> ^ esbuild bundle %o^",
+          esbuild_command_prefix
+        }
+        if metafile_flag then
+          table.insert(cmd_parts, metafile_flag)
+        end
+        table.insert(cmd_parts, "%f --outfile=%o |>")
+        print(table.concat(cmd_parts, " "))
       end
       local _exp_3 = args.minify
       if "both" == _exp_3 or "only" == _exp_3 then
-        print("!esbuild_bundle_minified = |> ^ esbuild minified bundle %o^ NODE_PATH=" .. tostring(shell_quote(args.source_dir)) .. " $(ESBUILD) " .. tostring(esbuild_args) .. " --minify %f --outfile=%o |>")
+        local cmd_parts = {
+          "!esbuild_bundle_minified = |> ^ esbuild minified bundle %o^",
+          esbuild_command_prefix
+        }
+        if metafile_flag then
+          table.insert(cmd_parts, metafile_flag)
+        end
+        table.insert(cmd_parts, "--minify %f --outfile=%o |>")
+        print(table.concat(cmd_parts, " "))
       end
       print()
       local appended_group
@@ -364,6 +385,9 @@ _M.run = function(args)
           if css_target then
             table.insert(extras, css_target .. ".map")
           end
+        end
+        if args.metafile then
+          table.insert(extras, "%O-metafile.json")
         end
         if next(extras) then
           return tostring(shell_quote(target)) .. " | " .. tostring(table.concat((function()

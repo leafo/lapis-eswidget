@@ -150,6 +150,7 @@ window.init_Login = function(widget_selector, widget_params) {
         tup_compile_dep_group: "$(TOP)/<moon>"
         tup_bundle_dep_group: "$(TOP)/<coffee>"
         minify: "only"
+        metafile: true
         sourcemap: true
       }
 

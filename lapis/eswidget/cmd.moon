@@ -203,13 +203,36 @@ _M.run = (args) ->
           print "!compile_js = |> ^ compile_js %f > %o^ lapis-eswidget compile_js #{args.moonscript and "--moonscript" or ""} --file %f > %o |>"
           print [[!join_bundle = |> ^ join bundle %o^ (for file in %f; do echo 'import "]] .. join(source_to_top, "'$file'") .. [[";' | sed 's/\.js//'; done) > %o |>]]
 
+          metafile_flag = if args.metafile
+            "--metafile=%O-metafile.json"
+
+          esbuild_command_prefix = "NODE_PATH=#{shell_quote args.source_dir} $(ESBUILD) #{esbuild_args}"
+
           switch args.minify
             when "both", "none"
-              print "!esbuild_bundle = |> ^ esbuild bundle %o^ NODE_PATH=#{shell_quote args.source_dir} $(ESBUILD) #{esbuild_args} %f --outfile=%o |>"
+              cmd_parts = {
+                "!esbuild_bundle = |> ^ esbuild bundle %o^"
+                esbuild_command_prefix
+              }
+
+              if metafile_flag
+                table.insert cmd_parts, metafile_flag
+
+              table.insert cmd_parts, "%f --outfile=%o |>"
+              print table.concat cmd_parts, " "
 
           switch args.minify
             when "both", "only"
-              print "!esbuild_bundle_minified = |> ^ esbuild minified bundle %o^ NODE_PATH=#{shell_quote args.source_dir} $(ESBUILD) #{esbuild_args} --minify %f --outfile=%o |>"
+              cmd_parts = {
+                "!esbuild_bundle_minified = |> ^ esbuild minified bundle %o^"
+                esbuild_command_prefix
+              }
+
+              if metafile_flag
+                table.insert cmd_parts, metafile_flag
+
+              table.insert cmd_parts, "--minify %f --outfile=%o |>"
+              print table.concat cmd_parts, " "
 
           print!
 
@@ -280,6 +303,9 @@ _M.run = (args) ->
               table.insert extras, target .. ".map"
               if css_target
                 table.insert extras, css_target .. ".map"
+
+            if args.metafile
+              table.insert extras, "%O-metafile.json"
 
             if next extras
               "#{shell_quote target} | #{table.concat ["#{shell_quote e}" for e in *extras], " "}"

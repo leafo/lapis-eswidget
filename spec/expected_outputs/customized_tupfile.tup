@@ -5,7 +5,7 @@ ESBUILD=ezbuild
 
 !compile_js = |> ^ compile_js %f > %o^ lapis-eswidget compile_js --moonscript --file %f > %o |>
 !join_bundle = |> ^ join bundle %o^ (for file in %f; do echo 'import "../../../'$file'";' | sed 's/\.js//'; done) > %o |>
-!esbuild_bundle_minified = |> ^ esbuild minified bundle %o^ NODE_PATH=spec/static/js $(ESBUILD) --target=es6 --log-level=warning --bundle --sourcemap --minify %f --outfile=%o |>
+!esbuild_bundle_minified = |> ^ esbuild minified bundle %o^ NODE_PATH=spec/static/js $(ESBUILD) --target=es6 --log-level=warning --bundle --sourcemap --metafile=%O-metafile.json --minify %f --outfile=%o |>
 
 : spec/views/login.moon | $(TOP)/<moon> |> !compile_js |> spec/views/login.js {package_main}
 : spec/views/user/settings.moon | $(TOP)/<moon> |> !compile_js |> spec/views/user/settings.js
@@ -13,8 +13,8 @@ ESBUILD=ezbuild
 
 # package: main
 : {package_main} spec/views/user/settings.js |> !join_bundle |> spec/static/js/main.js
-: spec/static/js/main.js | {package_main} spec/views/user/settings.js $(TOP)/<coffee> |> !esbuild_bundle_minified |> spec/static/main.min.js | spec/static/main.min.css spec/static/main.min.js.map spec/static/main.min.css.map
+: spec/static/js/main.js | {package_main} spec/views/user/settings.js $(TOP)/<coffee> |> !esbuild_bundle_minified |> spec/static/main.min.js | spec/static/main.min.css spec/static/main.min.js.map spec/static/main.min.css.map %O-metafile.json
 
 # package: settings
 : spec/views/user/settings.js |> !join_bundle |> spec/static/js/settings.js
-: spec/static/js/settings.js | spec/views/user/settings.js $(TOP)/<coffee> |> !esbuild_bundle_minified |> spec/static/settings.min.js | spec/static/settings.min.js.map
+: spec/static/js/settings.js | spec/views/user/settings.js $(TOP)/<coffee> |> !esbuild_bundle_minified |> spec/static/settings.min.js | spec/static/settings.min.js.map %O-metafile.json
