@@ -390,6 +390,12 @@ _M.run = (args) ->
             -- unminified output
             switch args.minify
               when "both", "none"
+                command_args = esbuild_args
+                if args.metafile
+                  metafile_output = package_output_target package, "-metafile.json"
+                  append_output metafile_output
+                  command_args ..= " --metafile=#{shell_quote metafile_output}"
+
                 bundle_target = append_output package_output_target package
 
                 if has_css
@@ -402,12 +408,19 @@ _M.run = (args) ->
                     append_output package_output_target package, ".css.map"
 
                 print "#{bundle_target}: #{package_source_target package}"
-                print "", "NODE_PATH=#{shell_quote args.source_dir} $(ESBUILD) #{esbuild_args} \"$<\" --outfile=\"$@\""
+                print "", "NODE_PATH=#{shell_quote args.source_dir} $(ESBUILD) #{command_args} \"$<\" --outfile=\"$@\""
                 print!
 
             -- minified output
             switch args.minify
               when "both", "only"
+                command_args = esbuild_args
+
+                if args.metafile
+                  metafile_output = package_output_target package, ".min-metafile.json"
+                  append_output metafile_output
+                  command_args ..= " --metafile=#{shell_quote metafile_output}"
+
                 bundle_target = append_output package_output_target package, ".min.js"
 
                 if has_css
@@ -420,7 +433,7 @@ _M.run = (args) ->
                     append_output package_output_target package, ".min.css.map"
 
                 print "#{bundle_target}: #{package_source_target package}"
-                print "", "NODE_PATH=#{shell_quote args.source_dir} $(ESBUILD) #{esbuild_args} --minify \"$<\" --outfile=\"$@\""
+                print "", "NODE_PATH=#{shell_quote args.source_dir} $(ESBUILD) #{command_args} --minify \"$<\" --outfile=\"$@\""
                 print!
 
           print "# Misc rules"

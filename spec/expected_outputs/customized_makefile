@@ -19,7 +19,7 @@ spec/static/js/main.js: spec/views/login.js spec/views/user_profile.js spec/view
 	(for file in $^; do echo 'import "../../../'$$file'";' | sed 's/\.js//'; done) > "$@"
 
 spec/static/main.min.js: spec/static/js/main.js
-	NODE_PATH=spec/static/js $(ESBUILD) --target=es6 --log-level=warning --bundle --sourcemap --minify "$<" --outfile="$@"
+	NODE_PATH=spec/static/js $(ESBUILD) --target=es6 --log-level=warning --bundle --sourcemap --metafile=spec/static/main.min-metafile.json --minify "$<" --outfile="$@"
 
 # Building package: settings
 spec/static/js/settings.js: spec/views/user/settings.js
@@ -27,8 +27,8 @@ spec/static/js/settings.js: spec/views/user/settings.js
 	(for file in $^; do echo 'import "../../../'$$file'";' | sed 's/\.js//'; done) > "$@"
 
 spec/static/settings.min.js: spec/static/js/settings.js
-	NODE_PATH=spec/static/js $(ESBUILD) --target=es6 --log-level=warning --bundle --sourcemap --minify "$<" --outfile="$@"
+	NODE_PATH=spec/static/js $(ESBUILD) --target=es6 --log-level=warning --bundle --sourcemap --metafile=spec/static/settings.min-metafile.json --minify "$<" --outfile="$@"
 
 # Misc rules
 clean:
-	rm spec/views/login.js spec/views/user_profile.js spec/views/user/settings.js spec/static/js/main.js spec/static/main.min.js spec/static/main.min.css spec/static/main.min.js.map spec/static/main.min.css.map spec/static/js/settings.js spec/static/settings.min.js spec/static/settings.min.js.map
+	rm spec/views/login.js spec/views/user_profile.js spec/views/user/settings.js spec/static/js/main.js spec/static/main.min-metafile.json spec/static/main.min.js spec/static/main.min.css spec/static/main.min.js.map spec/static/main.min.css.map spec/static/js/settings.js spec/static/settings.min-metafile.json spec/static/settings.min.js spec/static/settings.min.js.map

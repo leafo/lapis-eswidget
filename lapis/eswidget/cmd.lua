@@ -513,6 +513,12 @@ _M.run = function(args)
         local has_css = types.one_of(args.css_packages or { })(package)
         local _exp_2 = args.minify
         if "both" == _exp_2 or "none" == _exp_2 then
+          local command_args = esbuild_args
+          if args.metafile then
+            local metafile_output = package_output_target(package, "-metafile.json")
+            append_output(metafile_output)
+            command_args = command_args .. " --metafile=" .. tostring(shell_quote(metafile_output))
+          end
           local bundle_target = append_output(package_output_target(package))
           if has_css then
             append_output(package_output_target(package, ".css"))
@@ -524,11 +530,17 @@ _M.run = function(args)
             end
           end
           print(tostring(bundle_target) .. ": " .. tostring(package_source_target(package)))
-          print("", "NODE_PATH=" .. tostring(shell_quote(args.source_dir)) .. " $(ESBUILD) " .. tostring(esbuild_args) .. " \"$<\" --outfile=\"$@\"")
+          print("", "NODE_PATH=" .. tostring(shell_quote(args.source_dir)) .. " $(ESBUILD) " .. tostring(command_args) .. " \"$<\" --outfile=\"$@\"")
           print()
         end
         local _exp_3 = args.minify
         if "both" == _exp_3 or "only" == _exp_3 then
+          local command_args = esbuild_args
+          if args.metafile then
+            local metafile_output = package_output_target(package, ".min-metafile.json")
+            append_output(metafile_output)
+            command_args = command_args .. " --metafile=" .. tostring(shell_quote(metafile_output))
+          end
           local bundle_target = append_output(package_output_target(package, ".min.js"))
           if has_css then
             append_output(package_output_target(package, ".min.css"))
@@ -540,7 +552,7 @@ _M.run = function(args)
             end
           end
           print(tostring(bundle_target) .. ": " .. tostring(package_source_target(package)))
-          print("", "NODE_PATH=" .. tostring(shell_quote(args.source_dir)) .. " $(ESBUILD) " .. tostring(esbuild_args) .. " --minify \"$<\" --outfile=\"$@\"")
+          print("", "NODE_PATH=" .. tostring(shell_quote(args.source_dir)) .. " $(ESBUILD) " .. tostring(command_args) .. " --minify \"$<\" --outfile=\"$@\"")
           print()
         end
       end

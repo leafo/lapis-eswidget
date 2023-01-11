@@ -209,6 +209,7 @@ window.init_Login = function(widget_selector, widget_params) {
         esbuild_bin: "ezbuild"
         minify: "only"
         sourcemap: true
+        metafile: true
         css_packages: {"main"}
       }
 
