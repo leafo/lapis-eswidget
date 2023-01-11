@@ -105,7 +105,7 @@ lapis-eswidget generate_spec --help
 
 Usage: lapis-eswidget generate_spec [-h] [--widget-dirs <widget_dirs>]
        [--format {json,tup,makefile}] [--minify {both,only,none}]
-       [--sourcemap] [--css-packages <css_packages>]
+       [--sourcemap] [--metafile] [--css-packages <css_packages>]
        [--source-dir <source_dir>] [--output-dir <output_dir>]
        [--esbuild-bin <esbuild_bin>]
        [--tup-compile-dep-group <tup_compile_dep_group>]
@@ -122,6 +122,7 @@ Options:
    --minify {both,only,none}
                          Set how minified bundles should be generated (default: both)
    --sourcemap           Enable sourcemap for bundled outputs
+   --metafile            Enable esbuild metafile, creates {output}-metafile.json for every bundled output
    --css-packages <css_packages>
                          Instruct build that css files will be generated for listed packages
    --source-dir <source_dir>
@@ -134,7 +135,6 @@ Options:
                          Dependency group used during the widget -> js compile phase (eg. $(TOP)/<moon>)
    --tup-bundle-dep-group <tup_bundle_dep_group>
                          Dependency group used during esbuild bundling phase (eg. $(TOP)/<coffee>)
-
 ```
 
 Scan directories for widgets that extend from `ESWidget` and generate a
