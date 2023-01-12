@@ -331,7 +331,7 @@ _M.run = (args) ->
               else
                 print ": #{package_inputs} |> !esbuild_bundle |> #{output_with_extras package} {packages}"
 
-          -- if both minified and regular bundles are created, then do minifucation as separate step
+          -- if both minified and regular bundles are created, then do minification as separate step
           unless args.skip_bundle
             if args.minify == "both" and next packages
               print!
@@ -391,54 +391,55 @@ _M.run = (args) ->
 
             has_css = types.one_of(args.css_packages or {}) package
 
-            -- unminified output
-            switch args.minify
-              when "both", "none"
-                command_args = esbuild_args
-                if args.metafile
-                  metafile_output = package_output_target package, "-metafile.json"
-                  append_output metafile_output
-                  command_args ..= " --metafile=#{shell_quote metafile_output}"
+            unless args.skip_bundle
+              -- unminified output
+              switch args.minify
+                when "both", "none"
+                  command_args = esbuild_args
+                  if args.metafile
+                    metafile_output = package_output_target package, "-metafile.json"
+                    append_output metafile_output
+                    command_args ..= " --metafile=#{shell_quote metafile_output}"
 
-                bundle_target = append_output package_output_target package
-
-                if has_css
-                  append_output package_output_target package, ".css"
-
-                if args.sourcemap
-                  append_output "#{bundle_target}.map"
+                  bundle_target = append_output package_output_target package
 
                   if has_css
-                    append_output package_output_target package, ".css.map"
+                    append_output package_output_target package, ".css"
 
-                print "#{bundle_target}: #{package_source_target package}"
-                print "", "NODE_PATH=#{shell_quote args.source_dir} $(ESBUILD) #{command_args} \"$<\" --outfile=\"$@\""
-                print!
+                  if args.sourcemap
+                    append_output "#{bundle_target}.map"
 
-            -- minified output
-            switch args.minify
-              when "both", "only"
-                command_args = esbuild_args
+                    if has_css
+                      append_output package_output_target package, ".css.map"
 
-                if args.metafile
-                  metafile_output = package_output_target package, ".min-metafile.json"
-                  append_output metafile_output
-                  command_args ..= " --metafile=#{shell_quote metafile_output}"
+                  print "#{bundle_target}: #{package_source_target package}"
+                  print "", "NODE_PATH=#{shell_quote args.source_dir} $(ESBUILD) #{command_args} \"$<\" --outfile=\"$@\""
+                  print!
 
-                bundle_target = append_output package_output_target package, ".min.js"
+              -- minified output
+              switch args.minify
+                when "both", "only"
+                  command_args = esbuild_args
 
-                if has_css
-                  append_output package_output_target package, ".min.css"
+                  if args.metafile
+                    metafile_output = package_output_target package, ".min-metafile.json"
+                    append_output metafile_output
+                    command_args ..= " --metafile=#{shell_quote metafile_output}"
 
-                if args.sourcemap
-                  append_output "#{bundle_target}.map"
+                  bundle_target = append_output package_output_target package, ".min.js"
 
                   if has_css
-                    append_output package_output_target package, ".min.css.map"
+                    append_output package_output_target package, ".min.css"
 
-                print "#{bundle_target}: #{package_source_target package}"
-                print "", "NODE_PATH=#{shell_quote args.source_dir} $(ESBUILD) #{command_args} --minify \"$<\" --outfile=\"$@\""
-                print!
+                  if args.sourcemap
+                    append_output "#{bundle_target}.map"
+
+                    if has_css
+                      append_output package_output_target package, ".min.css.map"
+
+                  print "#{bundle_target}: #{package_source_target package}"
+                  print "", "NODE_PATH=#{shell_quote args.source_dir} $(ESBUILD) #{command_args} --minify \"$<\" --outfile=\"$@\""
+                  print!
 
           print "# Misc rules"
           print "clean:"

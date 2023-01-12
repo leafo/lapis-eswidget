@@ -215,6 +215,22 @@ window.init_Login = function(widget_selector, widget_params) {
 
       assert_expected_output "simple_makefile"
 
+    it "generates makefile without bundling", ->
+      import run from require "lapis.eswidget.cmd"
+      run {
+        command: "generate_spec"
+        format: "makefile"
+        moonscript: true
+        widget_dirs: {"spec/views"}
+        source_dir: "spec/static/js"
+        output_dir: "spec/static"
+        skip_bundle: true
+        minify: "none"
+      }
+
+      assert_expected_output "no_bundle_makefile"
+
+
     it "generates customized makefile", ->
       import run from require "lapis.eswidget.cmd"
       run {
