@@ -214,29 +214,25 @@ _M.run = (args) ->
 
           switch args.minify
             when "both", "none"
-              cmd_parts = {
-                "!esbuild_bundle = |> ^ esbuild bundle %o^"
-                esbuild_command_prefix
-              }
+              command_args = esbuild_command_prefix
 
               if metafile_flag
+                command_args ..= " #{metafile_flag}"
                 table.insert cmd_parts, metafile_flag
 
-              table.insert cmd_parts, "%f --outfile=%o |>"
-              print table.concat cmd_parts, " "
+              command_args ..= " %f --outfile=%o"
+
+              print "!esbuild_bundle = |> ^ esbuild bundle %o^ #{command_args} |>"
 
           switch args.minify
             when "both", "only"
-              cmd_parts = {
-                "!esbuild_bundle_minified = |> ^ esbuild minified bundle %o^"
-                esbuild_command_prefix
-              }
+              command_args = esbuild_command_prefix
 
               if metafile_flag
-                table.insert cmd_parts, metafile_flag
+                command_args ..= " #{metafile_flag}"
 
-              table.insert cmd_parts, "--minify %f --outfile=%o |>"
-              print table.concat cmd_parts, " "
+              command_args ..= " --minify %f --outfile=%o"
+              print "!esbuild_bundle_minified = |> ^ esbuild minified bundle %o^ #{command_args} |>"
 
           print!
 

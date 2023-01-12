@@ -268,27 +268,22 @@ _M.run = function(args)
       local esbuild_command_prefix = "NODE_PATH=" .. tostring(shell_quote(args.source_dir)) .. " $(ESBUILD) " .. tostring(esbuild_args)
       local _exp_2 = args.minify
       if "both" == _exp_2 or "none" == _exp_2 then
-        local cmd_parts = {
-          "!esbuild_bundle = |> ^ esbuild bundle %o^",
-          esbuild_command_prefix
-        }
+        local command_args = esbuild_command_prefix
         if metafile_flag then
+          command_args = command_args .. " " .. tostring(metafile_flag)
           table.insert(cmd_parts, metafile_flag)
         end
-        table.insert(cmd_parts, "%f --outfile=%o |>")
-        print(table.concat(cmd_parts, " "))
+        command_args = command_args .. " %f --outfile=%o"
+        print("!esbuild_bundle = |> ^ esbuild bundle %o^ " .. tostring(command_args) .. " |>")
       end
       local _exp_3 = args.minify
       if "both" == _exp_3 or "only" == _exp_3 then
-        local cmd_parts = {
-          "!esbuild_bundle_minified = |> ^ esbuild minified bundle %o^",
-          esbuild_command_prefix
-        }
+        local command_args = esbuild_command_prefix
         if metafile_flag then
-          table.insert(cmd_parts, metafile_flag)
+          command_args = command_args .. " " .. tostring(metafile_flag)
         end
-        table.insert(cmd_parts, "--minify %f --outfile=%o |>")
-        print(table.concat(cmd_parts, " "))
+        command_args = command_args .. " --minify %f --outfile=%o"
+        print("!esbuild_bundle_minified = |> ^ esbuild minified bundle %o^ " .. tostring(command_args) .. " |>")
       end
       print()
       local appended_group
