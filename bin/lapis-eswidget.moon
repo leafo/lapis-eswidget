@@ -29,6 +29,7 @@ with parser\command "generate_spec", "Scan widgets and generate specification fo
   \option("--source-dir", "The working directory for source files (NODE_PATH will be set to this during bundle)")\default "static/js"
   \option("--output-dir", "Destination of final compiled asset packages")\default "static"
   \option("--esbuild-bin", "Set the path to the esbuild binary. When empty, will use the ESBUILD tup environment variable")
+  \option("--esbuild-args", "Append additional arguments to esbuild command")
 
   -- these are the tup order-only dependency groups for various stages of building
   \option("--tup-compile-dep-group", "Dependency group used during the widget -> js compile phase (eg. $(TOP)/<moon>)")

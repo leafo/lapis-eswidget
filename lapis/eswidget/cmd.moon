@@ -150,11 +150,15 @@ _M.run = (args) ->
 
       esbuild_args = table.concat esbuild_args, " "
 
+      if args.esbuild_args
+        esbuild_args ..= " #{args.esbuild_args}"
+
       switch args.format
         when "json"
           asset_spec = {
             config: {
               esbuild: args.esbuild_bin
+              :esbuild_args
               moonscript: args.moonscript
               source_dir: args.source_dir
               output_dir: args.output_dir

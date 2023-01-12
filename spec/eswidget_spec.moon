@@ -165,6 +165,7 @@ window.init_Login = function(widget_selector, widget_params) {
         widget_dirs: {"spec/views"}
         source_dir: "spec/static/js"
         output_dir: "spec/static"
+        esbuild_args: "--exclude:jquery"
       }
 
       import from_json from require "lapis.util"
@@ -172,6 +173,7 @@ window.init_Login = function(widget_selector, widget_params) {
       assert_result = types.assert types.shape {
         config: types.shape {
           moonscript: true
+          esbuild_args: "--target=es6 --log-level=warning --bundle --exclude:jquery"
           source_dir: "spec/static/js"
           output_dir: "spec/static"
         }

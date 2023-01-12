@@ -201,11 +201,15 @@ _M.run = function(args)
       table.insert(esbuild_args, "--sourcemap")
     end
     esbuild_args = table.concat(esbuild_args, " ")
+    if args.esbuild_args then
+      esbuild_args = esbuild_args .. " " .. tostring(args.esbuild_args)
+    end
     local _exp_1 = args.format
     if "json" == _exp_1 then
       local asset_spec = {
         config = {
           esbuild = args.esbuild_bin,
+          esbuild_args = esbuild_args,
           moonscript = args.moonscript,
           source_dir = args.source_dir,
           output_dir = args.output_dir
