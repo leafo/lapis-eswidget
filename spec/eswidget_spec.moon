@@ -210,6 +210,7 @@ window.init_Login = function(widget_selector, widget_params) {
         widget_dirs: {"spec/views"}
         source_dir: "spec/static/js"
         output_dir: "spec/static"
+        minify: "none"
       }
 
       assert_expected_output "simple_makefile"

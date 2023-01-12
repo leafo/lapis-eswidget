@@ -18,11 +18,17 @@ spec/static/js/main.js: spec/views/login.js spec/views/user_profile.js spec/view
 	mkdir -p spec/static/js
 	(for file in $^; do echo 'import "../../../'$$file'";' | sed 's/\.js//'; done) > "$@"
 
+spec/static/main.js: spec/static/js/main.js
+	NODE_PATH=spec/static/js $(ESBUILD) --target=es6 --log-level=warning --bundle "$<" --outfile="$@"
+
 # Building package: settings
 spec/static/js/settings.js: spec/views/user/settings.js
 	mkdir -p spec/static/js
 	(for file in $^; do echo 'import "../../../'$$file'";' | sed 's/\.js//'; done) > "$@"
 
+spec/static/settings.js: spec/static/js/settings.js
+	NODE_PATH=spec/static/js $(ESBUILD) --target=es6 --log-level=warning --bundle "$<" --outfile="$@"
+
 # Misc rules
 clean:
-	rm spec/views/login.js spec/views/user_profile.js spec/views/user/settings.js spec/static/js/main.js spec/static/js/settings.js
+	rm spec/views/login.js spec/views/user_profile.js spec/views/user/settings.js spec/static/js/main.js spec/static/main.js spec/static/js/settings.js spec/static/settings.js
