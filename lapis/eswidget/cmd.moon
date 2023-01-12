@@ -207,34 +207,36 @@ _M.run = (args) ->
           print "!compile_js = |> ^ compile_js %f > %o^ lapis-eswidget compile_js #{args.moonscript and "--moonscript" or ""} --file %f > %o |>"
           print [[!join_bundle = |> ^ join bundle %o^ (for file in %f; do echo 'import "]] .. join(source_to_top, "'$file'") .. [[";' | sed 's/\.js//'; done) > %o |>]]
 
-          metafile_flag = if args.metafile
-            "--metafile=%O-metafile.json"
+          -- declare macros for bundling
+          unless args.skip_bundle
+            metafile_flag = if args.metafile
+              "--metafile=%O-metafile.json"
 
-          esbuild_command_prefix = "NODE_PATH=#{shell_quote args.source_dir} $(ESBUILD) #{esbuild_args}"
+            esbuild_command_prefix = "NODE_PATH=#{shell_quote args.source_dir} $(ESBUILD) #{esbuild_args}"
 
-          switch args.minify
-            when "both", "none"
-              command_args = esbuild_command_prefix
+            switch args.minify
+              when "both", "none"
+                command_args = esbuild_command_prefix
 
-              if metafile_flag
-                command_args ..= " #{metafile_flag}"
-                table.insert cmd_parts, metafile_flag
+                if metafile_flag
+                  command_args ..= " #{metafile_flag}"
+                  table.insert cmd_parts, metafile_flag
 
-              command_args ..= " %f --outfile=%o"
+                command_args ..= " %f --outfile=%o"
 
-              print "!esbuild_bundle = |> ^ esbuild bundle %o^ #{command_args} |>"
+                print "!esbuild_bundle = |> ^ esbuild bundle %o^ #{command_args} |>"
 
-          switch args.minify
-            when "both", "only"
-              command_args = esbuild_command_prefix
+            switch args.minify
+              when "both", "only"
+                command_args = esbuild_command_prefix
 
-              if metafile_flag
-                command_args ..= " #{metafile_flag}"
+                if metafile_flag
+                  command_args ..= " #{metafile_flag}"
 
-              command_args ..= " --minify %f --outfile=%o"
-              print "!esbuild_bundle_minified = |> ^ esbuild minified bundle %o^ #{command_args} |>"
+                command_args ..= " --minify %f --outfile=%o"
+                print "!esbuild_bundle_minified = |> ^ esbuild minified bundle %o^ #{command_args} |>"
 
-          print!
+            print!
 
           appended_group = (group_setting, prefix="") ->
             if group_setting and group_setting != ""
@@ -323,17 +325,19 @@ _M.run = (args) ->
 
             package_inputs = "#{shell_quote package_source_target package} | #{package_dependencies package, args.tup_bundle_dep_group}"
 
-            if args.minify == "only"
-              print ": #{package_inputs} |> !esbuild_bundle_minified |> #{output_with_extras  package, ".min.js"}"
-            else
-              print ": #{package_inputs} |> !esbuild_bundle |> #{output_with_extras package} {packages}"
+            unless args.skip_bundle
+              if args.minify == "only"
+                print ": #{package_inputs} |> !esbuild_bundle_minified |> #{output_with_extras  package, ".min.js"}"
+              else
+                print ": #{package_inputs} |> !esbuild_bundle |> #{output_with_extras package} {packages}"
 
           -- if both minified and regular bundles are created, then do minifucation as separate step
-          if args.minify == "both" and next packages
-            print!
-            print "# minifying packages"
-            for package in *packages
-              print ": #{shell_quote package_source_target package} | {packages} |> !esbuild_bundle_minified |> #{output_with_extras package, ".min.js"}"
+          unless args.skip_bundle
+            if args.minify == "both" and next packages
+              print!
+              print "# minifying packages"
+              for package in *packages
+                print ": #{shell_quote package_source_target package} | {packages} |> !esbuild_bundle_minified |> #{output_with_extras package, ".min.js"}"
 
         when "makefile"
           print "ESBUILD=#{shell_quote args.esbuild_bin or "esbuild"}"

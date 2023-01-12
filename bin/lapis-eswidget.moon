@@ -28,6 +28,8 @@ with parser\command "generate_spec", "Scan widgets and generate specification fo
 
   \option("--source-dir", "The working directory for source files (NODE_PATH will be set to this during bundle)")\default "static/js"
   \option("--output-dir", "Destination of final compiled asset packages")\default "static"
+
+  \flag("--skip-bundle", "Don't append commands for final bundle output")
   \option("--esbuild-bin", "Set the path to the esbuild binary. When empty, will use the ESBUILD tup environment variable")
   \option("--esbuild-args", "Append additional arguments to esbuild command")
 
