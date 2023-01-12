@@ -272,7 +272,6 @@ _M.run = function(args)
           local command_args = esbuild_command_prefix
           if metafile_flag then
             command_args = command_args .. " " .. tostring(metafile_flag)
-            table.insert(cmd_parts, metafile_flag)
           end
           command_args = command_args .. " %f --outfile=%o"
           print("!esbuild_bundle = |> ^ esbuild bundle %o^ " .. tostring(command_args) .. " |>")

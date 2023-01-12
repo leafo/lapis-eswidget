@@ -220,7 +220,6 @@ _M.run = (args) ->
 
                 if metafile_flag
                   command_args ..= " #{metafile_flag}"
-                  table.insert cmd_parts, metafile_flag
 
                 command_args ..= " %f --outfile=%o"
 
