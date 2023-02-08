@@ -159,7 +159,10 @@ class ESWidget extends Widget
   -- NOTE: load order: this will cause inner items to run their js_init before outer elements
   -- this is different than how I've previously done it, where outer runs before inner
   content: (fn=@inner_content) =>
-    element @widget_enclosing_element or "div", @widget_enclosing_attributes!, -> fn @
+    if @widget_enclosing_element == false
+      fn @
+    else
+      element @widget_enclosing_element, @widget_enclosing_attributes!, -> fn @
 
     if js = @js_init!
       if @layout_opts

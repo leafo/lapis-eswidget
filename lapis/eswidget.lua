@@ -117,9 +117,13 @@ do
       if fn == nil then
         fn = self.inner_content
       end
-      element(self.widget_enclosing_element or "div", self:widget_enclosing_attributes(), function()
-        return fn(self)
-      end)
+      if self.widget_enclosing_element == false then
+        fn(self)
+      else
+        element(self.widget_enclosing_element, self:widget_enclosing_attributes(), function()
+          return fn(self)
+        end)
+      end
       do
         local js = self:js_init()
         if js then

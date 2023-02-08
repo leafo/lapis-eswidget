@@ -324,6 +324,52 @@ describe "eswidget", ->
       assert.same [[<div class="user_profile_widget" id="user_profile_1"></div><script type="text/javascript">init_UserProfile('#user_profile_1', null);</script>]], UserProfile!\render_to_string!
 
 
+    it "renders with overridden content method", ->
+      class ItemPage extends require "lapis.eswidget"
+        content: =>
+          -- this is ugly but currently the only way to do this
+          @_buffer\call super.content, @, ->
+            div "What the heck?"
+
+      assert.same [[<div class="item_page_widget" id="item_page_1"><div>What the heck?</div></div>]], ItemPage!\render_to_string!
+
+    describe "widget_enclosing_element", ->
+      it "overrides default", ->
+        class UserProfile extends require "lapis.eswidget"
+          widget_enclosing_element: "span"
+
+        class AlertPage extends require "lapis.eswidget"
+          widget_enclosing_element: "section"
+          widget_enclosing_attributes: =>
+            attr = super!
+            attr.class = nil
+            attr.role = "alert"
+            attr
+
+          js_init: => "alert('hi')"
+
+          inner_content: =>
+            pre "cool"
+
+
+        assert.same [[<span class="user_profile_widget" id="user_profile_1"></span>]], UserProfile!\render_to_string!
+        assert.same [[<section id="alert_page_2" role="alert"><pre>cool</pre></section><script type="text/javascript">alert('hi')</script>]], AlertPage!\render_to_string!
+
+      it "skips enclosing element", ->
+        class UserProfile extends require "lapis.eswidget"
+          widget_enclosing_element: false
+
+        class AlertPage extends require "lapis.eswidget"
+          widget_enclosing_element: false
+
+          js_init: => "alert('hi')"
+
+          inner_content: =>
+            pre "cool"
+
+        assert.same [[]], UserProfile!\render_to_string!
+        assert.same [[<pre>cool</pre><script type="text/javascript">alert('hi')</script>]], AlertPage!\render_to_string!
+
     it "renders js_init into content_for buffer", ->
       class InnerThing extends require "lapis.eswidget"
         @es_module: [[console.log('another thing..')]]
@@ -350,7 +396,6 @@ describe "eswidget", ->
           [[init_UserProfile('#user_profile_1', null);]]
         }
       }, layout_opts
-
 
   describe "js_init", ->
     it "no default js_init if module is not specified", ->
