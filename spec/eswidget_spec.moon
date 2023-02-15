@@ -385,17 +385,22 @@ describe "eswidget", ->
         inner_content: =>
           widget InnerThing!
 
-      layout_opts = {}
+      Request = require "lapis.request"
+
+      request = setmetatable {
+        layout_opts: {} -- legacy trigger for knowing we are rendering in layout
+      }, Request.__base
 
       widget = UserProfile!
-      widget\include_helper { :layout_opts }
+      widget\include_helper request
       assert.same [[<div class="user_profile_widget" id="user_profile_1"><div class="inner_thing_widget" id="inner_thing_2"></div></div>]], widget\render_to_string!
       assert.same {
+        layout_opts: {}
         _content_for_js_init: {
           [[init_InnerThing('#inner_thing_2', {"items":[1,2,3]});]]
           [[init_UserProfile('#user_profile_1', null);]]
         }
-      }, layout_opts
+      }, request
 
   describe "js_init", ->
     it "no default js_init if module is not specified", ->
