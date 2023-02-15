@@ -326,10 +326,12 @@ describe "eswidget", ->
 
     it "renders with overridden content method", ->
       class ItemPage extends require "lapis.eswidget"
+        new_content: =>
+          div "What the heck?"
+
         content: =>
           -- this is ugly but currently the only way to do this
-          @_buffer\call super.content, @, ->
-            div "What the heck?"
+          @_buffer\call super.content, @, @new_content
 
       assert.same [[<div class="item_page_widget" id="item_page_1"><div>What the heck?</div></div>]], ItemPage!\render_to_string!
 
