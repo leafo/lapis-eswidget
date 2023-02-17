@@ -124,24 +124,26 @@ do
           return fn(self)
         end)
       end
-      do
-        local js = self:js_init()
-        if js then
-          if self.layout_opts then
-            return self:content_for("js_init", function()
-              raw(js)
-              if not (js:match(";%s*$")) then
-                return raw(";")
-              end
-            end)
-          else
-            return script({
-              type = "text/javascript"
-            }, function()
-              return raw(js)
-            end)
+      return self:render_js_init()
+    end,
+    render_js_init = function(self)
+      local js = self:js_init()
+      if not (js) then
+        return 
+      end
+      if self.layout_opts then
+        return self:content_for("js_init", function()
+          raw(js)
+          if not (js:match(";%s*$")) then
+            return raw(";")
           end
-        end
+        end)
+      else
+        return script({
+          type = "text/javascript"
+        }, function()
+          return raw(js)
+        end)
       end
     end,
     inner_content = function(self) end

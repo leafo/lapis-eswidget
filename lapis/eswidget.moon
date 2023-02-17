@@ -164,15 +164,20 @@ class ESWidget extends Widget
     else
       element @widget_enclosing_element, @widget_enclosing_attributes!, -> fn @
 
-    if js = @js_init!
-      if @layout_opts
-        @content_for "js_init", ->
-          raw js
-          unless js\match ";%s*$"
-            raw ";"
-      else
-        script type: "text/javascript", ->
-          raw js
+    @render_js_init!
+
+  render_js_init: =>
+    js = @js_init!
+    return unless js
+
+    if @layout_opts
+      @content_for "js_init", ->
+        raw js
+        unless js\match ";%s*$"
+          raw ";"
+    else
+      script type: "text/javascript", ->
+        raw js
 
 
   inner_content: =>
