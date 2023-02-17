@@ -67,11 +67,21 @@ _M.run = (args) ->
       prefixes = {...}
       coroutine.wrap -> scan_prefix unpack prefixes
 
+  count_directories = (str) -> #[k for k in str\gmatch "[/\\]"]
 
   each_widget = ->
     coroutine.wrap ->
+      module_files = [file for file in each_module_file unpack args.widget_dirs]
+      table.sort module_files, (a, b) ->
+        a_count = count_directories(a)
+        b_count = count_directories(b)
 
-      for file in each_module_file unpack args.widget_dirs
+        if a_count == b_count
+          a < b
+        else
+          a_count < b_count
+
+      for file in *module_files
         module_name = path_to_module file
         widget = require module_name
         continue unless is_valid_widget widget
