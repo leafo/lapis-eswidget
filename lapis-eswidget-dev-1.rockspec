@@ -20,6 +20,7 @@ dependencies = {
 build = {
   type = "builtin",
   modules = {
+    ["lapis.cmd.actions.eswidget"] = "lapis/cmd/actions/eswidget.lua",
     ["lapis.eswidget"] = "lapis/eswidget.lua",
     ["lapis.eswidget.cmd"] = "lapis/eswidget/cmd.lua",
     ["lapis.eswidget.prop_types"] = "lapis/eswidget/prop_types.lua",
