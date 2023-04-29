@@ -93,12 +93,44 @@ _M.run = function(args)
       end)
     end
   end
+  local count_directories
+  count_directories = function(str)
+    return #(function()
+      local _accum_0 = { }
+      local _len_0 = 1
+      for k in str:gmatch("[/\\]") do
+        _accum_0[_len_0] = k
+        _len_0 = _len_0 + 1
+      end
+      return _accum_0
+    end)()
+  end
   local each_widget
   each_widget = function()
     return coroutine.wrap(function()
-      for file in each_module_file(unpack(args.widget_dirs)) do
+      local module_files
+      do
+        local _accum_0 = { }
+        local _len_0 = 1
+        for file in each_module_file(unpack(args.widget_dirs)) do
+          _accum_0[_len_0] = file
+          _len_0 = _len_0 + 1
+        end
+        module_files = _accum_0
+      end
+      table.sort(module_files, function(a, b)
+        local a_count = count_directories(a)
+        local b_count = count_directories(b)
+        if a_count == b_count then
+          return a < b
+        else
+          return a_count < b_count
+        end
+      end)
+      for _index_0 = 1, #module_files do
         local _continue_0 = false
         repeat
+          local file = module_files[_index_0]
           local module_name = path_to_module(file)
           local widget = require(module_name)
           if not (is_valid_widget(widget)) then
