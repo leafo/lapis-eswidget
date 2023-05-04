@@ -48,6 +48,8 @@ return {
       _with_0:option("--esbuild-args", "Append additional arguments to esbuild command")
       _with_0:option("--tup-compile-dep-group", "Dependency group used during the widget -> js compile phase (eg. $(TOP)/<moon>)")
       _with_0:option("--tup-bundle-dep-group", "Dependency group used during esbuild bundling phase (eg. $(TOP)/<coffee>)")
+      _with_0:option("--tup-compile-out-group", "Which group name to place compile output files in (eg. $(TOP)/<modules>)")
+      _with_0:option("--tup-bundle-out-group", "Which group name to place bundle output files in (eg. $(TOP)/<bundles>)")
     end
     do
       local _with_0 = parser:command("debug", "Show any extractable information about a widget module")

@@ -381,7 +381,7 @@ _M.run = function(args)
             end
             bin = nil
           end
-          local _value_0 = ": " .. tostring(file) .. tostring(appended_group(args.tup_compile_dep_group, " | ")) .. " |> !compile_js |> " .. tostring(out_file) .. tostring(bin or "")
+          local _value_0 = ": " .. tostring(file) .. tostring(appended_group(args.tup_compile_dep_group, " | ")) .. " |> !compile_js |> " .. tostring(out_file) .. tostring(appended_group(args.tup_compile_out_group, " ")) .. tostring(bin or "")
           _accum_0[_len_0] = _value_0
           _len_0 = _len_0 + 1
         end
@@ -444,11 +444,17 @@ _M.run = function(args)
         print("# package: " .. tostring(package))
         print(": " .. tostring(package_dependencies(package)) .. " |> !join_bundle |> " .. tostring(shell_quote(package_source_target(package))))
         local package_inputs = tostring(shell_quote(package_source_target(package))) .. " | " .. tostring(package_dependencies(package, args.tup_bundle_dep_group))
+        local out_group
+        if args.tup_bundle_out_group then
+          out_group = " " .. tostring(args.tup_bundle_out_group)
+        else
+          out_group = ""
+        end
         if not (args.skip_bundle) then
           if args.minify == "only" then
-            print(": " .. tostring(package_inputs) .. " |> !esbuild_bundle_minified |> " .. tostring(output_with_extras(package, ".min.js")))
+            print(": " .. tostring(package_inputs) .. " |> !esbuild_bundle_minified |> " .. tostring(output_with_extras(package, ".min.js")) .. tostring(out_group))
           else
-            print(": " .. tostring(package_inputs) .. " |> !esbuild_bundle |> " .. tostring(output_with_extras(package)) .. " {packages}")
+            print(": " .. tostring(package_inputs) .. " |> !esbuild_bundle |> " .. tostring(output_with_extras(package)) .. tostring(out_group) .. " {packages}")
           end
         end
       end

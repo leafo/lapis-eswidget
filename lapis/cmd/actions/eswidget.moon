@@ -43,6 +43,9 @@ parsed_args = false
       \option("--tup-compile-dep-group", "Dependency group used during the widget -> js compile phase (eg. $(TOP)/<moon>)")
       \option("--tup-bundle-dep-group", "Dependency group used during esbuild bundling phase (eg. $(TOP)/<coffee>)")
 
+      \option("--tup-compile-out-group", "Which group name to place compile output files in (eg. $(TOP)/<modules>)")
+      \option("--tup-bundle-out-group", "Which group name to place bundle output files in (eg. $(TOP)/<bundles>)")
+
     with parser\command "debug", "Show any extractable information about a widget module"
       \argument "module_name"
 

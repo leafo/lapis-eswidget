@@ -291,7 +291,7 @@ _M.run = (args) ->
 
               nil
 
-            ": #{file}#{appended_group args.tup_compile_dep_group, " | "} |> !compile_js |> #{out_file}#{bin or ""}"
+            ": #{file}#{appended_group args.tup_compile_dep_group, " | "} |> !compile_js |> #{out_file}#{appended_group args.tup_compile_out_group, " "}#{bin or ""}"
 
           table.sort rules
           for rule in *rules
@@ -334,11 +334,16 @@ _M.run = (args) ->
 
             package_inputs = "#{shell_quote package_source_target package} | #{package_dependencies package, args.tup_bundle_dep_group}"
 
+            out_group = if args.tup_bundle_out_group
+              " #{args.tup_bundle_out_group}"
+            else
+              ""
+
             unless args.skip_bundle
               if args.minify == "only"
-                print ": #{package_inputs} |> !esbuild_bundle_minified |> #{output_with_extras  package, ".min.js"}"
+                print ": #{package_inputs} |> !esbuild_bundle_minified |> #{output_with_extras  package, ".min.js"}#{out_group}"
               else
-                print ": #{package_inputs} |> !esbuild_bundle |> #{output_with_extras package} {packages}"
+                print ": #{package_inputs} |> !esbuild_bundle |> #{output_with_extras package}#{out_group} {packages}"
 
           -- if both minified and regular bundles are created, then do minification as separate step
           unless args.skip_bundle
