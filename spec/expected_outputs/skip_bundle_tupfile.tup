@@ -3,13 +3,6 @@ export LUA_PATH
 export LUA_CPATH
 
 !compile_js = |> ^ compile_js %f > %o^ lapis-eswidget compile_js --moonscript --file %f > %o |>
-!join_bundle = |> ^ join bundle %o^ (for file in %f; do echo 'import "../../../'$file'";' | sed 's/\.js//'; done) > %o |>
 : spec/views/login.moon |> !compile_js |> spec/views/login.js {package_main}
 : spec/views/user/settings.moon |> !compile_js |> spec/views/user/settings.js
 : spec/views/user_profile.moon |> !compile_js |> spec/views/user_profile.js {package_main}
-
-# package: main
-: {package_main} spec/views/user/settings.js |> !join_bundle |> spec/static/js/main.js
-
-# package: settings
-: spec/views/user/settings.js |> !join_bundle |> spec/static/js/settings.js

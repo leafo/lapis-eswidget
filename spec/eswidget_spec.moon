@@ -129,6 +129,7 @@ window.init_Login = function(widget_selector, widget_params) {
       run {
         command: "generate_spec"
         format: "tup"
+        bundle_method: "esbuild"
         moonscript: true
         widget_dirs: {"spec/views"}
         source_dir: "spec/static/js"
@@ -143,6 +144,7 @@ window.init_Login = function(widget_selector, widget_params) {
       run {
         command: "generate_spec"
         format: "tup"
+        bundle_method: "esbuild"
         moonscript: true
         widget_dirs: {"spec/views"}
         source_dir: "spec/static/js"
@@ -158,6 +160,7 @@ window.init_Login = function(widget_selector, widget_params) {
       run {
         command: "generate_spec"
         format: "tup"
+        bundle_method: "esbuild"
         moonscript: true
         widget_dirs: {"spec/views"}
         source_dir: "spec/static/js"

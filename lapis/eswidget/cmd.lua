@@ -292,30 +292,37 @@ _M.run = function(args)
       end
       print()
       print("!compile_js = |> ^ compile_js %f > %o^ lapis-eswidget compile_js " .. tostring(args.moonscript and "--moonscript" or "") .. " --file %f > %o |>")
-      print([[!join_bundle = |> ^ join bundle %o^ (for file in %f; do echo 'import "]] .. join(source_to_top, "'$file'") .. [[";' | sed 's/\.js//'; done) > %o |>]])
+      local separate_minify = false
       if not (args.skip_bundle) then
-        local metafile_flag
-        if args.esbuild_metafile then
-          metafile_flag = "--metafile=%O-metafile.json"
-        end
-        local esbuild_command_prefix = "NODE_PATH=" .. tostring(shell_quote(args.source_dir)) .. " $(ESBUILD) " .. tostring(esbuild_args)
-        local _exp_2 = args.minify
-        if "both" == _exp_2 or "none" == _exp_2 then
-          local command_args = esbuild_command_prefix
-          if metafile_flag then
-            command_args = command_args .. " " .. tostring(metafile_flag)
+        local _exp_2 = args.bundle_method
+        if "esbuild" == _exp_2 then
+          local _esbuild_args = esbuild_args
+          if args.esbuild_metafile then
+            _esbuild_args = _esbuild_args .. " --metafile=%O-metafile.json"
           end
-          command_args = command_args .. " %f --outfile=%o"
-          print("!esbuild_bundle = |> ^ esbuild bundle %o^ " .. tostring(command_args) .. " |>")
-        end
-        local _exp_3 = args.minify
-        if "both" == _exp_3 or "only" == _exp_3 then
-          local command_args = esbuild_command_prefix
-          if metafile_flag then
-            command_args = command_args .. " " .. tostring(metafile_flag)
+          local esbuild_command = table.concat({
+            [[(for file in %f; do echo 'import "]] .. join("./", "'$file'") .. [[";'; done)]],
+            "NODE_PATH=" .. tostring(shell_quote(args.source_dir)) .. " $(ESBUILD) " .. tostring(_esbuild_args) .. " --outfile=%o"
+          }, " | ")
+          if esbuild_command then
+            esbuild_command = esbuild_command .. " " .. tostring(metafile_flag)
           end
-          command_args = command_args .. " --minify %f --outfile=%o"
-          print("!esbuild_bundle_minified = |> ^ esbuild minified bundle %o^ " .. tostring(command_args) .. " |>")
+          local _exp_3 = args.minify
+          if "both" == _exp_3 or "none" == _exp_3 then
+            print("!bundle_js = |> ^ esbuild bundle %o^ " .. tostring(esbuild_command) .. " |>")
+          end
+          local _exp_4 = args.minify
+          if "both" == _exp_4 or "only" == _exp_4 then
+            separate_minify = true
+            print("!bundle_js_minified = |> ^ esbuild minified bundle %o^ " .. tostring(esbuild_command) .. " --minify |>")
+          end
+        elseif "module" == _exp_2 then
+          error("TODO: test me")
+          print([[!bundle_js = |> ^ join module %o^ (for file in %f; do echo 'import "]] .. join(source_to_top, "'$file'") .. [[";' | sed 's/\.js//'; done) > %o |>]])
+        elseif "concat" == _exp_2 then
+          error("not implemented yet")
+        else
+          error("Expected to have bundle type but have none")
         end
         print()
       end
@@ -333,8 +340,8 @@ _M.run = function(args)
       local package_files = { }
       local binned_packages = { }
       local unbinned_files = { }
-      local package_dependencies
-      package_dependencies = function(package, group_name)
+      local generate_package_inputs
+      generate_package_inputs = function(package, ...)
         local out = { }
         if binned_packages[package] then
           table.insert(out, "{package_" .. tostring(package) .. "}")
@@ -346,8 +353,32 @@ _M.run = function(args)
             table.insert(out, file)
           end
         end
-        if group_name and group_name ~= "" then
-          table.insert(out, group_name)
+        local extra_inputs = {
+          ...
+        }
+        local have_pipe = false
+        for _index_0 = 1, #extra_inputs do
+          local _continue_0 = false
+          repeat
+            local extra = extra_inputs[_index_0]
+            if not (extra) then
+              _continue_0 = true
+              break
+            end
+            if extra == "" then
+              _continue_0 = true
+              break
+            end
+            if not (have_pipe) then
+              table.insert(out, "|")
+              have_pipe = true
+            end
+            table.insert(out, extra)
+            _continue_0 = true
+          until true
+          if not _continue_0 then
+            break
+          end
         end
         return table.concat(out, " ")
       end
@@ -436,35 +467,37 @@ _M.run = function(args)
           return shell_quote(target)
         end
       end
-      for _index_0 = 1, #packages do
-        local package = packages[_index_0]
-        local files = package_files[package]
-        table.sort(files)
-        print()
-        print("# package: " .. tostring(package))
-        print(": " .. tostring(package_dependencies(package)) .. " |> !join_bundle |> " .. tostring(shell_quote(package_source_target(package))))
-        local package_inputs = tostring(shell_quote(package_source_target(package))) .. " | " .. tostring(package_dependencies(package, args.tup_bundle_dep_group))
-        local out_group
-        if args.tup_bundle_out_group then
-          out_group = " " .. tostring(args.tup_bundle_out_group)
-        else
-          out_group = ""
-        end
-        if not (args.skip_bundle) then
-          if args.minify == "only" then
-            print(": " .. tostring(package_inputs) .. " |> !esbuild_bundle_minified |> " .. tostring(output_with_extras(package, ".min.js")) .. tostring(out_group))
+      if not (args.skip_bundle) then
+        for _index_0 = 1, #packages do
+          local package = packages[_index_0]
+          local files = package_files[package]
+          table.sort(files)
+          print()
+          print("# package: " .. tostring(package))
+          local out_group
+          if args.tup_bundle_out_group then
+            out_group = " " .. tostring(args.tup_bundle_out_group)
           else
-            print(": " .. tostring(package_inputs) .. " |> !esbuild_bundle |> " .. tostring(output_with_extras(package)) .. tostring(out_group) .. " {packages}")
+            out_group = ""
+          end
+          if not (args.skip_bundle) then
+            local package_inputs = generate_package_inputs(package, args.tup_bundle_dep_group)
+            if args.minify == "only" then
+              assert(separate_minify, "internal error: minify requested but minify macro has not been declared")
+              print(": " .. tostring(package_inputs) .. " |> !bundle_js_minified |> " .. tostring(output_with_extras(package, ".min.js")) .. tostring(out_group))
+            else
+              print(": " .. tostring(package_inputs) .. " |> !bundle_js |> " .. tostring(output_with_extras(package)) .. tostring(out_group) .. " {packages}")
+            end
           end
         end
-      end
-      if not (args.skip_bundle) then
         if args.minify == "both" and next(packages) then
           print()
           print("# minifying packages")
           for _index_0 = 1, #packages do
             local package = packages[_index_0]
-            print(": " .. tostring(shell_quote(package_source_target(package))) .. " | {packages} |> !esbuild_bundle_minified |> " .. tostring(output_with_extras(package, ".min.js")))
+            local package_inputs = generate_package_inputs(package, args.tup_bundle_dep_group, "{packages}")
+            assert(separate_minify, "internal error: minify requested but minify macro has not been declared")
+            print(": " .. tostring(package_inputs) .. " |> !bundle_js_minified |> " .. tostring(output_with_extras(package, ".min.js")))
           end
         end
       end
