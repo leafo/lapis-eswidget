@@ -4,5 +4,8 @@ class Login extends require "lapis.eswidget"
 
   @es_module: [[
     import "./login.css"
+    import {Thing} from "lib/test"
+
     console.log("Login!", widget_selector, widget_params)
+    Thing()
   ]]

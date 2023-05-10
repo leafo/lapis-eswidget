@@ -51,8 +51,10 @@ describe "eswidget.cmd", ->
       }
 
       assert.same [[import "./login.css"
+import {Thing} from "lib/test"
 window.init_Login = function(widget_selector, widget_params) {
     console.log("Login!", widget_selector, widget_params)
+    Thing()
 }]], trim get_output!
 
     it "compiles module", ->
