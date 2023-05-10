@@ -214,15 +214,15 @@ _M.run = function(args)
       end
       return join(args.output_dir, tostring(package) .. tostring(suffix))
     end
-    local source_to_top
-    do
-      if args.source_dir:match("^/") then
-        error("--source-dir must be a relative path from the top level directory, and not an absolute path")
+    local relative_to_top
+    relative_to_top = function(path, label)
+      if path:match("^/") then
+        error(tostring(label) .. " must be a relative path from the top level directory, and not an absolute path")
       end
-      if args.source_dir:match("%.%.") or args.source_dir:match("%./") then
-        error("--source-dir must not use ../ or ./")
+      if path:match("%.%.") or path:match("%./") then
+        error(tostring(label) .. " must not use ../ or ./")
       end
-      source_to_top = args.source_dir:gsub("[^/]+", "..")
+      return path:gsub("[^/]+", "..")
     end
     local esbuild_args = {
       "--target=es6",
@@ -293,20 +293,21 @@ _M.run = function(args)
       print()
       print("!compile_js = |> ^ compile_js %f > %o^ lapis-eswidget compile_js " .. tostring(args.moonscript and "--moonscript" or "") .. " --file %f > %o |>")
       local separate_minify = false
+      local output_args = { }
       if not (args.skip_bundle) then
         local _exp_2 = args.bundle_method
         if "esbuild" == _exp_2 then
           local _esbuild_args = esbuild_args
           if args.esbuild_metafile then
+            output_args.esbuild_metafile = true
             _esbuild_args = _esbuild_args .. " --metafile=%O-metafile.json"
           end
+          output_args.sourcemap = args.sourcemap
+          output_args.css_packages = args.css_packages
           local esbuild_command = table.concat({
             [[(for file in %f; do echo 'import "]] .. join("./", "'$file'") .. [[";'; done)]],
             "NODE_PATH=" .. tostring(shell_quote(args.source_dir)) .. " $(ESBUILD) " .. tostring(_esbuild_args) .. " --outfile=%o"
           }, " | ")
-          if esbuild_command then
-            esbuild_command = esbuild_command .. " " .. tostring(metafile_flag)
-          end
           local _exp_3 = args.minify
           if "both" == _exp_3 or "none" == _exp_3 then
             print("!bundle_js = |> ^ esbuild bundle %o^ " .. tostring(esbuild_command) .. " |>")
@@ -317,8 +318,8 @@ _M.run = function(args)
             print("!bundle_js_minified = |> ^ esbuild minified bundle %o^ " .. tostring(esbuild_command) .. " --minify |>")
           end
         elseif "module" == _exp_2 then
-          error("TODO: test me")
-          print([[!bundle_js = |> ^ join module %o^ (for file in %f; do echo 'import "]] .. join(source_to_top, "'$file'") .. [[";' | sed 's/\.js//'; done) > %o |>]])
+          local to_root = relative_to_top(args.output_dir, "--output-dir")
+          print([[!bundle_js = |> ^ join module %o^ (for file in %f; do echo 'import "]] .. join(to_root, "'$file'") .. [[";' | sed 's/\.js//'; done) > %o |>]])
         elseif "concat" == _exp_2 then
           error("not implemented yet")
         else
@@ -439,18 +440,26 @@ _M.run = function(args)
         local target = package_output_target(package, suffix)
         local css_target
         local extras = { }
-        if types.one_of(args.css_packages or { })(package) then
+        if types.one_of(output_args.css_packages or { })(package) then
           css_target = package_output_target(package, suffix == ".min.js" and ".min.css" or ".css")
           table.insert(extras, css_target)
         end
         if args.sourcemap then
-          table.insert(extras, target .. ".map")
-          if css_target then
-            table.insert(extras, css_target .. ".map")
+          if output_args.sourcemap then
+            table.insert(extras, target .. ".map")
+            if css_target then
+              table.insert(extras, css_target .. ".map")
+            end
+          else
+            _M.print_warning("[" .. tostring(package) .. "] You used --sourcemap on a bundle method that does not support it (" .. tostring(args.bundle_method) .. ")")
           end
         end
         if args.esbuild_metafile then
-          table.insert(extras, "%O-metafile.json")
+          if output_args.esbuild_metafile then
+            table.insert(extras, "%O-metafile.json")
+          else
+            _M.print_warning("[" .. tostring(package) .. "] You used --esbuild-metafile on a bundle method that does not support it (" .. tostring(args.bundle_method) .. ")")
+          end
         end
         if next(extras) then
           return tostring(shell_quote(target)) .. " | " .. tostring(table.concat((function()
@@ -490,13 +499,12 @@ _M.run = function(args)
             end
           end
         end
-        if args.minify == "both" and next(packages) then
+        if args.minify == "both" and next(packages) and separate_minify then
           print()
           print("# minifying packages")
           for _index_0 = 1, #packages do
             local package = packages[_index_0]
             local package_inputs = generate_package_inputs(package, args.tup_bundle_dep_group, "{packages}")
-            assert(separate_minify, "internal error: minify requested but minify macro has not been declared")
             print(": " .. tostring(package_inputs) .. " |> !bundle_js_minified |> " .. tostring(output_with_extras(package, ".min.js")))
           end
         end
@@ -566,6 +574,7 @@ _M.run = function(args)
         packages = _accum_0
       end
       table.sort(packages)
+      local to_root = relative_to_top(args.source_dir, "--source-dir")
       for _index_0 = 1, #packages do
         local package = packages[_index_0]
         local files = package_files[package]
@@ -583,7 +592,7 @@ _M.run = function(args)
         end
         print(tostring(append_output(package_source_target(package))) .. ": " .. tostring(table.concat(package_dependencies, " ")))
         print("", "mkdir -p " .. tostring(shell_quote(args.source_dir)))
-        print("", [[(for file in $^; do echo 'import "]] .. join(source_to_top, "'$$file'") .. [[";' | sed 's/\.js//'; done) > "$@"]])
+        print("", [[(for file in $^; do echo 'import "]] .. join(to_root, "'$$file'") .. [[";' | sed 's/\.js//'; done) > "$@"]])
         print()
         local has_css = types.one_of(args.css_packages or { })(package)
         if not (args.skip_bundle) then

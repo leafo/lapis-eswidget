@@ -139,16 +139,16 @@ _M.run = (args) ->
       package_output_target = (package, suffix=".js") ->
         join args.output_dir, "#{package}#{suffix}"
 
-      -- relative path to move from args.source_dir to the top level directory
+      -- relative path to move from dir to the top level directory
       -- eg static/js -> ../..
-      source_to_top = do
-        if args.source_dir\match "^/"
-          error "--source-dir must be a relative path from the top level directory, and not an absolute path"
+      relative_to_top = (path, label) ->
+        if path\match "^/"
+          error "#{label} must be a relative path from the top level directory, and not an absolute path"
 
-        if args.source_dir\match("%.%.") or args.source_dir\match("%./")
-          error "--source-dir must not use ../ or ./"
+        if path\match("%.%.") or path\match("%./")
+          error "#{label} must not use ../ or ./"
 
-        args.source_dir\gsub("[^/]+", "..") -- this may not be very reliable, but should work in simple cases
+        path\gsub("[^/]+", "..") -- this may not be very reliable, but should work in simple cases
 
       esbuild_args = {
         "--target=es6"
@@ -219,6 +219,10 @@ _M.run = (args) ->
 
           separate_minify = false
 
+          -- the build command initialization will store what output options
+          -- are supported when listing generated files
+          output_args = { }
+
           -- declare macro for bundling
           unless args.skip_bundle
             switch args.bundle_method
@@ -226,7 +230,11 @@ _M.run = (args) ->
                 _esbuild_args = esbuild_args
 
                 if args.esbuild_metafile
+                  output_args.esbuild_metafile = true
                   _esbuild_args ..= " --metafile=%O-metafile.json"
+
+                output_args.sourcemap = args.sourcemap
+                output_args.css_packages = args.css_packages
 
                 -- dynamically generate a single entry point referencing all modules and pipe it into esbuild
                 esbuild_command = table.concat {
@@ -246,8 +254,8 @@ _M.run = (args) ->
                     print "!bundle_js_minified = |> ^ esbuild minified bundle %o^ #{esbuild_command} --minify |>"
 
               when "module"
-                error "TODO: test me"
-                print [[!bundle_js = |> ^ join module %o^ (for file in %f; do echo 'import "]] .. join(source_to_top, "'$file'") .. [[";' | sed 's/\.js//'; done) > %o |>]]
+                to_root = relative_to_top args.output_dir, "--output-dir"
+                print [[!bundle_js = |> ^ join module %o^ (for file in %f; do echo 'import "]] .. join(to_root, "'$file'") .. [[";' | sed 's/\.js//'; done) > %o |>]]
               when "concat"
                 error "not implemented yet"
               else
@@ -324,17 +332,23 @@ _M.run = (args) ->
 
             extras = {}
 
-            if types.one_of(args.css_packages or {}) package
+            if types.one_of(output_args.css_packages or {}) package
               css_target = package_output_target package, suffix == ".min.js" and ".min.css" or ".css"
               table.insert extras, css_target
 
             if args.sourcemap
-              table.insert extras, target .. ".map"
-              if css_target
-                table.insert extras, css_target .. ".map"
+              if output_args.sourcemap
+                table.insert extras, target .. ".map"
+                if css_target
+                  table.insert extras, css_target .. ".map"
+              else
+                _M.print_warning "[#{package}] You used --sourcemap on a bundle method that does not support it (#{args.bundle_method})"
 
             if args.esbuild_metafile
-              table.insert extras, "%O-metafile.json"
+              if output_args.esbuild_metafile
+                table.insert extras, "%O-metafile.json"
+              else
+                _M.print_warning "[#{package}] You used --esbuild-metafile on a bundle method that does not support it (#{args.bundle_method})"
 
             if next extras
               "#{shell_quote target} | #{table.concat ["#{shell_quote e}" for e in *extras], " "}"
@@ -364,12 +378,11 @@ _M.run = (args) ->
                   print ": #{package_inputs} |> !bundle_js |> #{output_with_extras package}#{out_group} {packages}"
 
             -- if both minified and regular bundles are created, then do minification as separate step
-            if args.minify == "both" and next packages
+            if args.minify == "both" and next(packages) and separate_minify
               print!
               print "# minifying packages"
               for package in *packages
                 package_inputs = generate_package_inputs package, args.tup_bundle_dep_group, "{packages}"
-                assert separate_minify, "internal error: minify requested but minify macro has not been declared"
                 print ": #{package_inputs} |> !bundle_js_minified |> #{output_with_extras package, ".min.js"}"
 
         when "makefile"
@@ -413,13 +426,15 @@ _M.run = (args) ->
           packages = [k for k in pairs package_files]
           table.sort packages
 
+          to_root = relative_to_top args.source_dir, "--source-dir"
+
           for package in *packages
             files = package_files[package]
             print "# Building package: #{package}"
             package_dependencies = [input_to_output file for file in *files]
             print "#{append_output package_source_target package}: #{table.concat package_dependencies, " "}"
             print "", "mkdir -p #{shell_quote args.source_dir}"
-            print "", [[(for file in $^; do echo 'import "]] .. join(source_to_top, "'$$file'") .. [[";' | sed 's/\.js//'; done) > "$@"]]
+            print "", [[(for file in $^; do echo 'import "]] .. join(to_root, "'$$file'") .. [[";' | sed 's/\.js//'; done) > "$@"]]
             print!
 
             has_css = types.one_of(args.css_packages or {}) package
