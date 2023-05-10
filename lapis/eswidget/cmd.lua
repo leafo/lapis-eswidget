@@ -295,7 +295,7 @@ _M.run = function(args)
       print([[!join_bundle = |> ^ join bundle %o^ (for file in %f; do echo 'import "]] .. join(source_to_top, "'$file'") .. [[";' | sed 's/\.js//'; done) > %o |>]])
       if not (args.skip_bundle) then
         local metafile_flag
-        if args.metafile then
+        if args.esbuild_metafile then
           metafile_flag = "--metafile=%O-metafile.json"
         end
         local esbuild_command_prefix = "NODE_PATH=" .. tostring(shell_quote(args.source_dir)) .. " $(ESBUILD) " .. tostring(esbuild_args)
@@ -418,7 +418,7 @@ _M.run = function(args)
             table.insert(extras, css_target .. ".map")
           end
         end
-        if args.metafile then
+        if args.esbuild_metafile then
           table.insert(extras, "%O-metafile.json")
         end
         if next(extras) then
@@ -557,7 +557,7 @@ _M.run = function(args)
           local _exp_2 = args.minify
           if "both" == _exp_2 or "none" == _exp_2 then
             local command_args = esbuild_args
-            if args.metafile then
+            if args.esbuild_metafile then
               local metafile_output = package_output_target(package, "-metafile.json")
               append_output(metafile_output)
               command_args = command_args .. " --metafile=" .. tostring(shell_quote(metafile_output))
@@ -579,7 +579,7 @@ _M.run = function(args)
           local _exp_3 = args.minify
           if "both" == _exp_3 or "only" == _exp_3 then
             local command_args = esbuild_args
-            if args.metafile then
+            if args.esbuild_metafile then
               local metafile_output = package_output_target(package, ".min-metafile.json")
               append_output(metafile_output)
               command_args = command_args .. " --metafile=" .. tostring(shell_quote(metafile_output))

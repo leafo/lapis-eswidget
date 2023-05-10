@@ -26,25 +26,33 @@ parsed_args = false
     with parser\command "generate_spec", "Scan widgets and generate specification for compiling bundles"
       \option("--widget-dirs", "Paths where widgets are located")\default("views,widgets")\convert to_array
 
+      \option("--bundle-method", "What tool to use to bundle the packages")\default("esbuild")\choices {"esbuild", "module", "concat"}
+
       \option("--format", "Output fromat for generated asset spec file")\choices({"json", "tup", "makefile"})\default "json"
       \option("--minify", "Set how minified bundles should be generated")\choices({"both", "only", "none"})\default "both"
-      \flag("--sourcemap", "Enable sourcemap for bundled outputs")
-      \flag("--metafile", "Enable esbuild metafile, creates {output}-metafile.json for every bundled output")
-      \option("--css-packages", "Instruct build that css files will be generated for listed packages")\convert to_array
 
       \option("--source-dir", "The working directory for source files (NODE_PATH will be set to this during bundle)")\default "static/js"
       \option("--output-dir", "Destination of final compiled asset packages")\default "static"
 
-      \flag("--skip-bundle", "Don't append commands for final bundle output")
-      \option("--esbuild-bin", "Set the path to the esbuild binary. When empty, will use the ESBUILD tup environment variable")
-      \option("--esbuild-args", "Append additional arguments to esbuild command")
+      \flag("--skip-bundle", "Skip generated final bundling command")
+      \option("--css-packages", "Instruct build that css files will be generated for listed packages")\convert to_array
+
+      \group("esbuild"
+        \flag("--esbuild-metafile --metafile", "Enable esbuild metafile, creates {output}-metafile.json for every bundled output")
+        \option("--esbuild-bin", "Set the path to the esbuild binary. When empty, will use the ESBUILD tup environment variable")
+        \option("--esbuild-args", "Append additional arguments to esbuild command")
+
+        \flag("--sourcemap", "Enable sourcemap for bundled outputs (esbuild only)")
+      )
 
       -- these are the tup order-only dependency groups for various stages of building
-      \option("--tup-compile-dep-group", "Dependency group used during the widget -> js compile phase (eg. $(TOP)/<moon>)")
-      \option("--tup-bundle-dep-group", "Dependency group used during esbuild bundling phase (eg. $(TOP)/<coffee>)")
+      \group("tup"
+        \option("--tup-compile-dep-group", "Dependency group used during the widget -> js compile phase (eg. $(TOP)/<moon>)")
+        \option("--tup-bundle-dep-group", "Dependency group used during esbuild bundling phase (eg. $(TOP)/<coffee>)")
 
-      \option("--tup-compile-out-group", "Which group name to place compile output files in (eg. $(TOP)/<modules>)")
-      \option("--tup-bundle-out-group", "Which group name to place bundle output files in (eg. $(TOP)/<bundles>)")
+        \option("--tup-compile-out-group", "Which group name to place compile output files in (eg. $(TOP)/<modules>)")
+        \option("--tup-bundle-out-group", "Which group name to place bundle output files in (eg. $(TOP)/<bundles>)")
+      )
 
     with parser\command "debug", "Show any extractable information about a widget module"
       \argument "module_name"

@@ -169,7 +169,7 @@ window.init_Login = function(widget_selector, widget_params) {
         tup_bundle_out_group: "$(TOP)/<bundles>"
 
         minify: "only"
-        metafile: true
+        esbuild_metafile: true
         sourcemap: true
       }
 
@@ -247,7 +247,7 @@ window.init_Login = function(widget_selector, widget_params) {
         esbuild_bin: "ezbuild"
         minify: "only"
         sourcemap: true
-        metafile: true
+        esbuild_metafile: true
         css_packages: {"main"}
       }
 

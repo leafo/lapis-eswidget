@@ -219,7 +219,7 @@ _M.run = (args) ->
 
           -- declare macros for bundling
           unless args.skip_bundle
-            metafile_flag = if args.metafile
+            metafile_flag = if args.esbuild_metafile
               "--metafile=%O-metafile.json"
 
             esbuild_command_prefix = "NODE_PATH=#{shell_quote args.source_dir} $(ESBUILD) #{esbuild_args}"
@@ -315,7 +315,7 @@ _M.run = (args) ->
               if css_target
                 table.insert extras, css_target .. ".map"
 
-            if args.metafile
+            if args.esbuild_metafile
               table.insert extras, "%O-metafile.json"
 
             if next extras
@@ -410,7 +410,7 @@ _M.run = (args) ->
               switch args.minify
                 when "both", "none"
                   command_args = esbuild_args
-                  if args.metafile
+                  if args.esbuild_metafile
                     metafile_output = package_output_target package, "-metafile.json"
                     append_output metafile_output
                     command_args ..= " --metafile=#{shell_quote metafile_output}"
@@ -435,7 +435,7 @@ _M.run = (args) ->
                 when "both", "only"
                   command_args = esbuild_args
 
-                  if args.metafile
+                  if args.esbuild_metafile
                     metafile_output = package_output_target package, ".min-metafile.json"
                     append_output metafile_output
                     command_args ..= " --metafile=#{shell_quote metafile_output}"
