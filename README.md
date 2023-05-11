@@ -101,40 +101,59 @@ If you want to enable loading MoonScript modules then you must pass `--moonscrip
 ### `generate_spec`
 
 ```
-lapis-eswidget generate_spec --help
-
-Usage: lapis-eswidget generate_spec [-h] [--widget-dirs <widget_dirs>]
-       [--format {json,tup,makefile}] [--minify {both,only,none}]
-       [--sourcemap] [--metafile] [--css-packages <css_packages>]
+Usage: lapis eswidget generate_spec [-h] [--minify {both,only,none}]
+       [--skip-bundle] [--css-packages <css_packages>]
+       [--bundle-method {esbuild,module,concat}]
+       [--widget-dirs <widget_dirs>] [--format {json,tup,makefile}]
        [--source-dir <source_dir>] [--output-dir <output_dir>]
-       [--esbuild-bin <esbuild_bin>]
+       [--esbuild-metafile] [--esbuild-bin <esbuild_bin>]
+       [--esbuild-args <esbuild_args>] [--sourcemap]
        [--tup-compile-dep-group <tup_compile_dep_group>]
        [--tup-bundle-dep-group <tup_bundle_dep_group>]
+       [--tup-compile-out-group <tup_compile_out_group>]
+       [--tup-bundle-out-group <tup_bundle_out_group>]
 
 Scan widgets and generate specification for compiling bundles
 
-Options:
-   -h, --help            Show this help message and exit.
+Primary options:
+   --bundle-method {esbuild,module,concat}
+                         What tool to use to bundle the packages (default: esbuild)
    --widget-dirs <widget_dirs>
                          Paths where widgets are located (default: views,widgets)
    --format {json,tup,makefile}
                          Output fromat for generated asset spec file (default: json)
-   --minify {both,only,none}
-                         Set how minified bundles should be generated (default: both)
-   --sourcemap           Enable sourcemap for bundled outputs
-   --metafile            Enable esbuild metafile, creates {output}-metafile.json for every bundled output
-   --css-packages <css_packages>
-                         Instruct build that css files will be generated for listed packages
    --source-dir <source_dir>
                          The working directory for source files (NODE_PATH will be set to this during bundle) (default: static/js)
    --output-dir <output_dir>
                          Destination of final compiled asset packages (default: static)
+
+esbuild:
+   --esbuild-metafile, --metafile
+                         Enable esbuild metafile, creates {output}-metafile.json for every bundled output
    --esbuild-bin <esbuild_bin>
                          Set the path to the esbuild binary. When empty, will use the ESBUILD tup environment variable
+   --esbuild-args <esbuild_args>
+                         Append additional arguments to esbuild command
+   --sourcemap           Enable sourcemap for bundled outputs (esbuild only)
+
+tup:
    --tup-compile-dep-group <tup_compile_dep_group>
                          Dependency group used during the widget -> js compile phase (eg. $(TOP)/<moon>)
    --tup-bundle-dep-group <tup_bundle_dep_group>
                          Dependency group used during esbuild bundling phase (eg. $(TOP)/<coffee>)
+   --tup-compile-out-group <tup_compile_out_group>
+                         Which group name to place compile output files in (eg. $(TOP)/<modules>)
+   --tup-bundle-out-group <tup_bundle_out_group>
+                         Which group name to place bundle output files in (eg. $(TOP)/<bundles>)
+
+Other options:
+   -h, --help            Show this help message and exit.
+   --minify {both,only,none}
+                         Set how minified bundles should be generated (default: both)
+   --skip-bundle         Skip generated final bundling command
+   --css-packages <css_packages>
+                         Instruct build that css files will be generated for listed packages
+
 ```
 
 Scan directories for widgets that extend from `ESWidget` and generate a

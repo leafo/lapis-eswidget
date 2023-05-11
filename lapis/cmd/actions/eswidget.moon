@@ -24,18 +24,17 @@ parsed_args = false
       \option("--widget-dirs", "Paths where widgets are located. Only used for compiling by --package")\default("views,widgets")\convert to_array
 
     with parser\command "generate_spec", "Scan widgets and generate specification for compiling bundles"
-      \option("--widget-dirs", "Paths where widgets are located")\default("views,widgets")\convert to_array
-
-      \option("--bundle-method", "What tool to use to bundle the packages")\default("esbuild")\choices {"esbuild", "module", "concat"}
-
-      \option("--format", "Output fromat for generated asset spec file")\choices({"json", "tup", "makefile"})\default "json"
       \option("--minify", "Set how minified bundles should be generated")\choices({"both", "only", "none"})\default "both"
-
-      \option("--source-dir", "The working directory for source files (NODE_PATH will be set to this during bundle)")\default "static/js"
-      \option("--output-dir", "Destination of final compiled asset packages")\default "static"
-
       \flag("--skip-bundle", "Skip generated final bundling command")
       \option("--css-packages", "Instruct build that css files will be generated for listed packages")\convert to_array
+
+      \group("Primary options"
+        \option("--bundle-method", "What tool to use to bundle the packages")\default("esbuild")\choices {"esbuild", "module", "concat"}
+        \option("--widget-dirs", "Paths where widgets are located")\default("views,widgets")\convert to_array
+        \option("--format", "Output fromat for generated asset spec file")\choices({"json", "tup", "makefile"})\default "json"
+        \option("--source-dir", "The working directory for source files (NODE_PATH will be set to this during bundle)")\default "static/js"
+        \option("--output-dir", "Destination of final compiled asset packages")\default "static"
+      )
 
       \group("esbuild"
         \flag("--esbuild-metafile --metafile", "Enable esbuild metafile, creates {output}-metafile.json for every bundled output")
