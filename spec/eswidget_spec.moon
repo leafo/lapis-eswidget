@@ -170,7 +170,7 @@ window.init_Login = function(widget_selector, widget_params) {
         tup_compile_dep_group: "$(TOP)/<moon>"
         tup_bundle_dep_group: "$(TOP)/<coffee>"
 
-        tup_compile_out: "$(TOP)/<packages>"
+        tup_compile_out_group: "$(TOP)/<modules>"
         tup_bundle_out_group: "$(TOP)/<bundles>"
 
         minify: "only"
@@ -179,6 +179,30 @@ window.init_Login = function(widget_selector, widget_params) {
       }
 
       assert_expected_output "customized_tupfile.tup"
+
+    it "generates tupfile with bundle method: module", ->
+      import run from require "lapis.eswidget.cmd"
+      run {
+        command: "generate_spec"
+        format: "tup"
+        bundle_method: "module"
+        moonscript: true
+        widget_dirs: {"spec/views"}
+        source_dir: "spec/static/js"
+        output_dir: "spec/static"
+        esbuild_bin: "ezbuild"
+
+        tup_compile_dep_group: "$(TOP)/<moon>"
+        tup_bundle_dep_group: "$(TOP)/<coffee>"
+
+        tup_compile_out_group: "$(TOP)/<modules>"
+        tup_bundle_out_group: "$(TOP)/<bundles>"
+
+        -- minify not supported
+        -- minify: "only"
+      }
+
+      assert_expected_output "bundle_module_tupfile.tup"
 
     it "generates json", ->
       import run from require "lapis.eswidget.cmd"
