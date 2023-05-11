@@ -271,7 +271,7 @@ _M.run = (args) ->
                 to_root = relative_to_top args.output_dir, "--output-dir"
                 print [[!bundle_js = |> ^ join module %o^ (for file in %f; do echo 'import "]] .. join(to_root, "'$file'") .. [[";' | sed 's/\.js//'; done) > %o |>]]
               when "concat"
-                error "not implemented yet"
+                print [[!bundle_js = |> ^ join %o^ cat %f > %o |>]]
               else
                 error "Expected to have bundle type but have none"
 
@@ -386,7 +386,9 @@ _M.run = (args) ->
                 package_inputs = generate_package_inputs package, args.tup_bundle_dep_group
 
                 if args.minify == "only"
-                  assert separate_minify, "internal error: minify requested but minify macro has not been declared"
+                  unless separate_minify
+                    error "The --bundle-method you chose does not support minification"
+
                   print ": #{package_inputs} |> !bundle_js_minified |> #{output_with_extras  package, ".min.js"}#{out_group}"
                 else
                   print ": #{package_inputs} |> !bundle_js |> #{output_with_extras package}#{out_group} {packages}"
