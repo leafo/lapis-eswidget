@@ -4,8 +4,11 @@ This library provides a base Widget class that enables aggregation of static
 JavaScript code and a unified system for initializing a widget with JavaScript
 code.
 
-A command-line tool is included for compiling a widget modules into an ES
-Module that can be used in a build system like [esbuild](https://esbuild.github.io/).
+A command-line tool is included for compiling a widget modules (`compile_js`)
+into an [ES
+Modules](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Modules),
+and for building build scripts (`generate_spec`) to compile bundles for groups
+of code using something like [esbuild](https://esbuild.github.io/).
 
 ## Example
 
@@ -157,9 +160,21 @@ Other options:
 ```
 
 Scan directories for widgets that extend from `ESWidget` and generate a
-specification for compiling bundles. This intermediate file is called an *Asset Spec*.
+specification for compiling bundles. This intermediate file is called an *Asset
+Spec*.
 
 Supports the following output formats: `json`, `tup`, `makefile`
+
+The generated build script bundles in two phases:
+
+1. Individual widgets are compiled to their JavaScript Module counterpart using the `compile_js` command above. The output of this command is placed dirctly next to the Lua file for the widget. eg. `widgets/hello.lua` will generate `widgets/hello.js` if it defines an `es_module` and `asset_packages` field.
+2. Every `.js` file generated is aggregated into 0 or more packages for bundling. For each asset package, the list of input files is piped into the bundling command. The default bundling method is `esbuild`.
+
+The bundling phase can be disabled with `--skip-bundle`. This can be useful if
+you wish to explicitly import the widget code you want in your bundling system.
+
+The `module` bundle method can be used to aggregate a list of `import`
+statements in a single file that can be imported elsewhere.
 
 ### `debug`
 
