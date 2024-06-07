@@ -55,6 +55,9 @@ class ESWidget extends Widget
 
   -- this splits apart the js_init into two parts
   -- js_init must be a class method
+  -- TODO: this is pretty janky, as it doesn't undertsand the syntax of the
+  -- import statement. It only just pulls the lines that begin with import to
+  -- the top
   @compile_es_module: =>
     -- TODO: how should this work with inheriting?
     return nil, "no @@es_module" unless rawget @, "es_module"
@@ -70,7 +73,7 @@ class ESWidget extends Widget
     for line in @es_module\gmatch "([^\r\n]+)"
       continue if line\match "^%s*$"
 
-      if line\match "^%s*import"
+      if line\match "^%s*import[^(]"
         table.insert import_lines, trim line
       else
         table.insert code_lines, line

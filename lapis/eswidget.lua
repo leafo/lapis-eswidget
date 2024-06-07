@@ -230,7 +230,7 @@ do
           _continue_0 = true
           break
         end
-        if line:match("^%s*import") then
+        if line:match("^%s*import[^(]") then
           table.insert(import_lines, trim(line))
         else
           table.insert(code_lines, line)
