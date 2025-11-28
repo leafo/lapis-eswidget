@@ -53,6 +53,29 @@ class ESWidget extends Widget
 
   @es_module_init_function_name: => "init_#{@__name}"
 
+  -- This requires a Lua module and also adds the module name to the depedency
+  -- array. Dependency array is then inserted as imports when compiling the es
+  @require: (path) =>
+    required = require path
+
+    -- only add to dependency list if the required widget has a es_module
+    if rawget required, "es_module"
+      unless rawget @, "es_module"
+        @es_module = ""
+
+      deps = rawget @, "es_module_dependencies"
+      unless deps
+        -- clone the parent class dependencies
+        deps = if @es_module_dependencies
+          {unpack @es_module_dependencies}
+        else
+          {}
+        @es_module_dependencies = deps
+
+      table.insert deps, path
+
+    required
+
   -- this splits apart the js_init into two parts
   -- js_init must be a class method
   -- TODO: this is pretty janky, as it doesn't undertsand the syntax of the
@@ -69,6 +92,11 @@ class ESWidget extends Widget
     import trim from require "lapis.util"
 
     assert type(@es_module) == "string", "@es_module must be a string"
+
+    if deps = @es_module_dependencies
+      for path in *deps
+        import_path = path\gsub "%.", "/"
+        table.insert import_lines, "import \"#{import_path}\""
 
     for line in @es_module\gmatch "([^\r\n]+)"
       continue if line\match "^%s*$"

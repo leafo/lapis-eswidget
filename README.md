@@ -203,6 +203,7 @@ Class
 * `@widget_class_name` (function) - Returns the CSS class name of this widget as a string
 * `@widget_class_list` (function) - Return variable number of arguments for the list of CSS classes this widget will have when rendered, calculated from the inheritance chain
 * `@compile_es_module` (function) - Compile the static `es_module` initialization code for the widget
+* `@require(path)` (function) - Require a Lua module, ensure `@es_module` exists (set to empty string if unset), and record a matching JavaScript import (dots converted to slashes); imports are inserted into the compiled module in the order they are declared
 
 Class properties
 
@@ -357,4 +358,3 @@ The naming convention is:
 * Where `asset_package` is the first package specified by the widget, like `main`, `admin`, etc. (Packages are user-defined and can be anything)
 * Where `widget_path` the conversion of the widget's module name to a path, like `widgets.hello.world` -> `hello/world` (Note the module prefix is not included)
 * And `ext` is the appropriate extension for the file
-

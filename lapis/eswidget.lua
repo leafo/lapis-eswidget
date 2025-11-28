@@ -214,6 +214,27 @@ do
   self.es_module_init_function_name = function(self)
     return "init_" .. tostring(self.__name)
   end
+  self.require = function(self, path)
+    local required = require(path)
+    if rawget(required, "es_module") then
+      if not (rawget(self, "es_module")) then
+        self.es_module = ""
+      end
+      local deps = rawget(self, "es_module_dependencies")
+      if not (deps) then
+        if self.es_module_dependencies then
+          deps = {
+            unpack(self.es_module_dependencies)
+          }
+        else
+          deps = { }
+        end
+        self.es_module_dependencies = deps
+      end
+      table.insert(deps, path)
+    end
+    return required
+  end
   self.compile_es_module = function(self)
     if not (rawget(self, "es_module")) then
       return nil, "no @@es_module"
@@ -223,6 +244,16 @@ do
     local trim
     trim = require("lapis.util").trim
     assert(type(self.es_module) == "string", "@es_module must be a string")
+    do
+      local deps = self.es_module_dependencies
+      if deps then
+        for _index_0 = 1, #deps do
+          local path = deps[_index_0]
+          local import_path = path:gsub("%.", "/")
+          table.insert(import_lines, "import \"" .. tostring(import_path) .. "\"")
+        end
+      end
+    end
     for line in self.es_module:gmatch("([^\r\n]+)") do
       local _continue_0 = false
       repeat
