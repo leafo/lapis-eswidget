@@ -83,28 +83,33 @@ class ESWidget extends Widget
   -- the top
   @compile_es_module: =>
     -- TODO: how should this work with inheriting?
-    return nil, "no @@es_module" unless rawget @, "es_module"
+
+    -- minimally we can inherit dependencies
+    deps = @es_module_dependencies
+
+    return nil, "no @@es_module or @@es_module_dependencies" unless rawget(@, "es_module") or deps
 
     -- split import and non-import statemetns
     import_lines = {}
     code_lines = {}
 
-    import trim from require "lapis.util"
-
-    assert type(@es_module) == "string", "@es_module must be a string"
-
-    if deps = @es_module_dependencies
+    if deps
       for path in *deps
         import_path = path\gsub "%.", "/"
         table.insert import_lines, "import \"#{import_path}\""
 
-    for line in @es_module\gmatch "([^\r\n]+)"
-      continue if line\match "^%s*$"
+    if @es_module
+      assert type(@es_module) == "string", "@es_module must be a string"
 
-      if line\match "^%s*import[^(]"
-        table.insert import_lines, trim line
-      else
-        table.insert code_lines, line
+      import trim from require "lapis.util"
+
+      for line in @es_module\gmatch "([^\r\n]+)"
+        continue if line\match "^%s*$"
+
+        if line\match "^%s*import[^(]"
+          table.insert import_lines, trim line
+        else
+          table.insert code_lines, line
 
     table.concat {
       table.concat import_lines,  "\n"

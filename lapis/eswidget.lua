@@ -236,40 +236,40 @@ do
     return required
   end
   self.compile_es_module = function(self)
-    if not (rawget(self, "es_module")) then
-      return nil, "no @@es_module"
+    local deps = self.es_module_dependencies
+    if not (rawget(self, "es_module") or deps) then
+      return nil, "no @@es_module or @@es_module_dependencies"
     end
     local import_lines = { }
     local code_lines = { }
-    local trim
-    trim = require("lapis.util").trim
-    assert(type(self.es_module) == "string", "@es_module must be a string")
-    do
-      local deps = self.es_module_dependencies
-      if deps then
-        for _index_0 = 1, #deps do
-          local path = deps[_index_0]
-          local import_path = path:gsub("%.", "/")
-          table.insert(import_lines, "import \"" .. tostring(import_path) .. "\"")
-        end
+    if deps then
+      for _index_0 = 1, #deps do
+        local path = deps[_index_0]
+        local import_path = path:gsub("%.", "/")
+        table.insert(import_lines, "import \"" .. tostring(import_path) .. "\"")
       end
     end
-    for line in self.es_module:gmatch("([^\r\n]+)") do
-      local _continue_0 = false
-      repeat
-        if line:match("^%s*$") then
+    if self.es_module then
+      assert(type(self.es_module) == "string", "@es_module must be a string")
+      local trim
+      trim = require("lapis.util").trim
+      for line in self.es_module:gmatch("([^\r\n]+)") do
+        local _continue_0 = false
+        repeat
+          if line:match("^%s*$") then
+            _continue_0 = true
+            break
+          end
+          if line:match("^%s*import[^(]") then
+            table.insert(import_lines, trim(line))
+          else
+            table.insert(code_lines, line)
+          end
           _continue_0 = true
+        until true
+        if not _continue_0 then
           break
         end
-        if line:match("^%s*import[^(]") then
-          table.insert(import_lines, trim(line))
-        else
-          table.insert(code_lines, line)
-        end
-        _continue_0 = true
-      until true
-      if not _continue_0 then
-        break
       end
     end
     return table.concat({

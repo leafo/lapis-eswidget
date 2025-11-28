@@ -569,7 +569,7 @@ window.init_MyWidget = function(widget_selector, widget_params) {
     it "attempts to compile module without code", ->
       class MyWidget extends require "lapis.eswidget"
 
-      assert.same {nil, "no @@es_module"}, {
+      assert.same {nil, "no @@es_module or @@es_module_dependencies"}, {
         MyWidget\compile_es_module!
       }
 

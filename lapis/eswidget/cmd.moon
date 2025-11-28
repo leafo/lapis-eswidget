@@ -534,7 +534,7 @@ _M.run = (args) ->
       print!
       print "Dependencies"
       print "=================="
-      deps = rawget Widget, "es_module_dependencies"
+      deps = Widget.es_module_dependencies
       if deps and next deps
         if args.recursive
           visited = {}
@@ -558,7 +558,7 @@ _M.run = (args) ->
               print "#{indent}#{branch_indent}(failed to load: #{mod})"
               return
 
-            subdeps = rawget mod, "es_module_dependencies"
+            subdeps = mod.es_module_dependencies
             return unless subdeps and next subdeps
 
             next_indent = indent .. (if is_last then "  " else "│ ")

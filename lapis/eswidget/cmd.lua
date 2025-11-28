@@ -709,7 +709,7 @@ _M.run = function(args)
     print()
     print("Dependencies")
     print("==================")
-    local deps = rawget(Widget, "es_module_dependencies")
+    local deps = Widget.es_module_dependencies
     if deps and next(deps) then
       if args.recursive then
         local visited = { }
@@ -745,7 +745,7 @@ _M.run = function(args)
             print(tostring(indent) .. tostring(branch_indent) .. "(failed to load: " .. tostring(mod) .. ")")
             return 
           end
-          local subdeps = rawget(mod, "es_module_dependencies")
+          local subdeps = mod.es_module_dependencies
           if not (subdeps and next(subdeps)) then
             return 
           end
