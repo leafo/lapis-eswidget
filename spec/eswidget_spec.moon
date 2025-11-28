@@ -469,6 +469,102 @@ describe "eswidget", ->
       widget = MyWidget!
       assert.same {[[init_MyWidget('#my_widget_1', {"color":"blue"});]]}, {widget\js_init!}
 
+  describe "@require", ->
+    with_modules = (imports, fn) ->
+      old_loaded = {}
+
+      for name, value in pairs imports
+        old_loaded[name] = package.loaded[name]
+        package.loaded[name] = value
+
+      ok, err = pcall fn
+
+      for name, value in pairs old_loaded
+        package.loaded[name] = value
+
+      assert ok, err
+
+    it "js_init with only dependencies", ->
+      with_modules {
+        "widgets.featured_game_grid": {
+          es_module: "alert('hi')"
+        }
+      }, ->
+        class MyWidget extends require "lapis.eswidget"
+          Dep = @require "widgets.featured_game_grid"
+          assert.same {es_module: "alert('hi')"}, Dep
+
+        assert.same [[import "widgets/featured_game_grid"
+window.init_MyWidget = function(widget_selector, widget_params) {
+
+}]], MyWidget\compile_es_module!
+
+        widget = MyWidget!
+        assert.same "", MyWidget.es_module
+
+        assert.same {
+          "widgets.featured_game_grid"
+        }, rawget(MyWidget, "es_module_dependencies")
+
+        assert.same {[[init_MyWidget('#my_widget_1', null);]]}, {widget\js_init!}
+
+    it "merges dependencies and existing es_module", ->
+      with_modules {
+        "widgets.featured_game_grid": {es_module: 'console.log(sup)' }
+      }, ->
+        class MyWidget extends require "lapis.eswidget"
+          @es_module: table.concat {
+            [[import "react";]]
+            [[console.log('hi')]]
+          }, "\n"
+
+          FeaturedGameGrid = @require "widgets.featured_game_grid"
+
+          assert.same {
+            es_module: 'console.log(sup)'
+          }, FeaturedGameGrid
+
+        assert.same {
+          "widgets.featured_game_grid"
+        }, rawget(MyWidget, "es_module_dependencies")
+
+        output = assert MyWidget\compile_es_module!
+        assert.same [[import "widgets/featured_game_grid"
+import "react";
+window.init_MyWidget = function(widget_selector, widget_params) {
+console.log('hi')
+}]], output
+
+    it "preserves dependency order, ignoring non es_module", ->
+      with_modules {
+        "widgets.a": {es_module: "alert(1)"}
+        "widgets.b": {non_es_module: true}
+        "widgets.c": {es_module: "alert(2)"}
+      }, ->
+        class MyWidget extends require "lapis.eswidget"
+          assert @require "widgets.a"
+          assert @require "widgets.b"
+          assert @require "widgets.c"
+
+        assert.same {"widgets.a", "widgets.c"}, MyWidget.es_module_dependencies
+        output = assert MyWidget\compile_es_module!
+        assert.same [[import "widgets/a"
+import "widgets/c"
+window.init_MyWidget = function(widget_selector, widget_params) {
+
+}]], output
+
+    it "skips dependency import when required module is not es_module", ->
+      with_modules {
+        "plain.module": {hello: "world"}
+      }, ->
+        class MyWidget extends require "lapis.eswidget"
+          plain = @require "plain.module"
+          assert.same {hello: "world"}, plain
+
+        assert.is_nil rawget(MyWidget, "es_module_dependencies")
+        assert.is_nil rawget(MyWidget, "es_module")
+
   describe "compile_es_module", ->
     it "attempts to compile module without code", ->
       class MyWidget extends require "lapis.eswidget"
@@ -664,5 +760,3 @@ window.get_started = function(widget_selector, widget_params) {
           id: 54
           name: "WHOA"
         }, widget.props
-
-
