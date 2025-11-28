@@ -523,7 +523,6 @@ _M.run = (args) ->
       print "packages:", table.concat Widget.asset_packages, ", "
       print "init method:", Widget\es_module_init_function_name!
       print "class names:", table.concat { Widget\widget_class_list!}, ", "
-
       print!
 
       -- TODO: do we want this?
@@ -533,13 +532,54 @@ _M.run = (args) ->
       -- print "coffee:", Widget\get_asset_file "coffee"
 
       print!
+      print "Dependencies"
+      print "=================="
+      deps = rawget Widget, "es_module_dependencies"
+      if deps and next deps
+        if args.recursive
+          visited = {}
 
+          print_dep_tree = (dep, indent="", is_last=true) ->
+            connector = if indent == ""
+              ""
+            elseif is_last
+              "└ "
+            else
+              "├ "
+
+            print "#{indent}#{connector}#{dep}"
+
+            return if visited[dep]
+            visited[dep] = true
+
+            ok, mod = pcall require, dep
+            unless ok and type(mod) == "table"
+              branch_indent = if is_last then "    " else "│   "
+              print "#{indent}#{branch_indent}(failed to load: #{mod})"
+              return
+
+            subdeps = rawget mod, "es_module_dependencies"
+            return unless subdeps and next subdeps
+
+            next_indent = indent .. (if is_last then "  " else "│ ")
+            for i, subdep in ipairs subdeps
+              print_dep_tree subdep, next_indent, i == #subdeps
+
+          for i, dep in ipairs deps
+            print_dep_tree dep, "", i == #deps
+        else
+          for dep in *deps
+            print dep
+      else
+        print "(none)"
+
+      print!
       print "ES module"
       print "=================="
       print Widget\compile_es_module!
+
     else
       error "unhandled command: #{args.command}"
 
 
 _M
-

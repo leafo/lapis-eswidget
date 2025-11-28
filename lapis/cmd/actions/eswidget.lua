@@ -49,6 +49,7 @@ return {
     do
       local _with_0 = parser:command("debug", "Show any extractable information about a widget module")
       _with_0:argument("module_name")
+      _with_0:flag("-r --recursive", "Recursively print dependency tree")
     end
     return parser
   end,

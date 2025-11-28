@@ -707,6 +707,72 @@ _M.run = function(args)
     }, ", "))
     print()
     print()
+    print("Dependencies")
+    print("==================")
+    local deps = rawget(Widget, "es_module_dependencies")
+    if deps and next(deps) then
+      if args.recursive then
+        local visited = { }
+        local print_dep_tree
+        print_dep_tree = function(dep, indent, is_last)
+          if indent == nil then
+            indent = ""
+          end
+          if is_last == nil then
+            is_last = true
+          end
+          local connector
+          if indent == "" then
+            connector = ""
+          elseif is_last then
+            connector = "└ "
+          else
+            connector = "├ "
+          end
+          print(tostring(indent) .. tostring(connector) .. tostring(dep))
+          if visited[dep] then
+            return 
+          end
+          visited[dep] = true
+          local ok, mod = pcall(require, dep)
+          if not (ok and type(mod) == "table") then
+            local branch_indent
+            if is_last then
+              branch_indent = "    "
+            else
+              branch_indent = "│   "
+            end
+            print(tostring(indent) .. tostring(branch_indent) .. "(failed to load: " .. tostring(mod) .. ")")
+            return 
+          end
+          local subdeps = rawget(mod, "es_module_dependencies")
+          if not (subdeps and next(subdeps)) then
+            return 
+          end
+          local next_indent = indent .. ((function()
+            if is_last then
+              return "  "
+            else
+              return "│ "
+            end
+          end)())
+          for i, subdep in ipairs(subdeps) do
+            print_dep_tree(subdep, next_indent, i == #subdeps)
+          end
+        end
+        for i, dep in ipairs(deps) do
+          print_dep_tree(dep, "", i == #deps)
+        end
+      else
+        for _index_0 = 1, #deps do
+          local dep = deps[_index_0]
+          print(dep)
+        end
+      end
+    else
+      print("(none)")
+    end
+    print()
     print("ES module")
     print("==================")
     return print(Widget:compile_es_module())

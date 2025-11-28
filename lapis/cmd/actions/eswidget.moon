@@ -55,6 +55,7 @@ parsed_args = false
 
     with parser\command "debug", "Show any extractable information about a widget module"
       \argument "module_name"
+      \flag("-r --recursive", "Recursively print dependency tree")
 
     parser
 
