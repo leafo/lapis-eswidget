@@ -1,7 +1,7 @@
 package = "lapis-eswidget"
 version = "dev-1"
 source = {
-  url = "git+ssh://git@github.com/leafo/lapis-eswidget.git"
+  url = "git+https://git@github.com/leafo/lapis-eswidget.git"
 }
 description = {
   summary = "A widget base class designed for generating ES modules for bundling JavaScript & more",
