@@ -1,0 +1,28 @@
+ESBUILD=ezbuild
+
+.PHONY: all clean
+all: spec/static/main.js spec/static/settings.js
+
+# Building modules
+spec/views/login.js: spec/views/login.moon
+	lapis-eswidget compile_js --moonscript --file "$<" > "$@"
+
+spec/views/user_profile.js: spec/views/user_profile.moon
+	lapis-eswidget compile_js --moonscript --file "$<" > "$@"
+
+spec/views/user/settings.js: spec/views/user/settings.moon
+	lapis-eswidget compile_js --moonscript --file "$<" > "$@"
+
+# Building package: main
+spec/static/main.js: spec/views/login.js spec/views/user_profile.js spec/views/user/settings.js
+	mkdir -p spec/static
+	(for file in $^; do echo 'import "../../'$$file'";' | sed 's/\.js//'; done) > "$@"
+
+# Building package: settings
+spec/static/settings.js: spec/views/user/settings.js
+	mkdir -p spec/static
+	(for file in $^; do echo 'import "../../'$$file'";' | sed 's/\.js//'; done) > "$@"
+
+# Misc rules
+clean:
+	rm spec/views/login.js spec/views/user_profile.js spec/views/user/settings.js spec/static/main.js spec/static/settings.js

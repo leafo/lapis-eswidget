@@ -1,7 +1,7 @@
 ESBUILD=esbuild
 
 .PHONY: all clean
-all: spec/static/main.js spec/static/main.min.js spec/static/settings.js spec/static/settings.min.js
+all: spec/static/main.js spec/static/settings.js
 
 # Building modules
 spec/views/login.js: spec/views/login.moon

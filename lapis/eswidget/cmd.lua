@@ -547,6 +547,23 @@ _M.run = function(args)
         end
       end
     elseif "makefile" == _exp_1 then
+      local bundle_method = args.bundle_method or "esbuild"
+      local supports_esbuild = bundle_method == "esbuild"
+      local minify_mode = args.minify
+      if not (supports_esbuild) then
+        if args.sourcemap then
+          _M.print_warning("--sourcemap is not supported for bundle method: " .. tostring(bundle_method))
+        end
+        if args.esbuild_metafile then
+          _M.print_warning("--esbuild-metafile is not supported for bundle method: " .. tostring(bundle_method))
+        end
+        if minify_mode ~= "none" then
+          _M.print_warning("--minify is not supported for bundle method: " .. tostring(bundle_method) .. ", generating unminified bundles")
+          minify_mode = "none"
+        end
+      end
+      local generate_unminified = minify_mode ~= "only"
+      local generate_minified = supports_esbuild and minify_mode ~= "none"
       print("ESBUILD=" .. tostring(shell_quote(args.esbuild_bin or "esbuild")))
       print()
       local found_widgets
@@ -573,9 +590,22 @@ _M.run = function(args)
         end
       end
       local bundle_outputs = { }
-      for package in pairs(package_files) do
-        table.insert(bundle_outputs, package_output_target(package))
-        table.insert(bundle_outputs, package_output_target(package, ".min.js"))
+      if args.skip_bundle then
+        for _index_0 = 1, #found_widgets do
+          local _des_0 = found_widgets[_index_0]
+          local file
+          file = _des_0.file
+          table.insert(bundle_outputs, input_to_output(file))
+        end
+      else
+        for package in pairs(package_files) do
+          if generate_unminified then
+            table.insert(bundle_outputs, package_output_target(package))
+          end
+          if generate_minified then
+            table.insert(bundle_outputs, package_output_target(package, ".min.js"))
+          end
+        end
       end
       table.sort(bundle_outputs)
       print(".PHONY: all clean")
@@ -611,70 +641,83 @@ _M.run = function(args)
         packages = _accum_0
       end
       table.sort(packages)
-      local to_root = relative_to_top(args.source_dir, "--source-dir")
-      for _index_0 = 1, #packages do
-        local package = packages[_index_0]
-        local files = package_files[package]
-        print("# Building package: " .. tostring(package))
-        local package_dependencies
-        do
-          local _accum_0 = { }
-          local _len_0 = 1
-          for _index_1 = 1, #files do
-            local file = files[_index_1]
-            _accum_0[_len_0] = input_to_output(file)
-            _len_0 = _len_0 + 1
+      local to_source_root = relative_to_top(args.source_dir, "--source-dir")
+      local to_output_root = relative_to_top(args.output_dir, "--output-dir")
+      if not (args.skip_bundle) then
+        for _index_0 = 1, #packages do
+          local package = packages[_index_0]
+          local files = package_files[package]
+          print("# Building package: " .. tostring(package))
+          local package_dependencies
+          do
+            local _accum_0 = { }
+            local _len_0 = 1
+            for _index_1 = 1, #files do
+              local file = files[_index_1]
+              _accum_0[_len_0] = input_to_output(file)
+              _len_0 = _len_0 + 1
+            end
+            package_dependencies = _accum_0
           end
-          package_dependencies = _accum_0
-        end
-        print(tostring(append_output(package_source_target(package))) .. ": " .. tostring(table.concat(package_dependencies, " ")))
-        print("", "mkdir -p " .. tostring(shell_quote(args.source_dir)))
-        print("", [[(for file in $^; do echo 'import "]] .. join(to_root, "'$$file'") .. [[";' | sed 's/\.js//'; done) > "$@"]])
-        print()
-        local has_css = types.one_of(args.css_packages or { })(package)
-        if not (args.skip_bundle) then
-          local _exp_2 = args.minify
-          if "both" == _exp_2 or "none" == _exp_2 then
-            local command_args = esbuild_args
-            if args.esbuild_metafile then
-              local metafile_output = package_output_target(package, "-metafile.json")
-              append_output(metafile_output)
-              command_args = command_args .. " --metafile=" .. tostring(shell_quote(metafile_output))
-            end
-            local bundle_target = append_output(package_output_target(package))
-            if has_css then
-              append_output(package_output_target(package, ".css"))
-            end
-            if args.sourcemap then
-              append_output(tostring(bundle_target) .. ".map")
-              if has_css then
-                append_output(package_output_target(package, ".css.map"))
-              end
-            end
-            print(tostring(bundle_target) .. ": " .. tostring(package_source_target(package)))
-            print("", "NODE_PATH=" .. tostring(shell_quote(args.source_dir)) .. " $(ESBUILD) " .. tostring(command_args) .. " \"$<\" --outfile=\"$@\"")
+          local _exp_2 = bundle_method
+          if "esbuild" == _exp_2 then
+            local build_target = append_output(package_source_target(package))
+            print(tostring(build_target) .. ": " .. tostring(table.concat(package_dependencies, " ")))
+            print("", "mkdir -p " .. tostring(shell_quote(args.source_dir)))
+            print("", [[(for file in $^; do echo 'import "]] .. join(to_source_root, "'$$file'") .. [[";' | sed 's/\.js//'; done) > "$@"]])
             print()
-          end
-          local _exp_3 = args.minify
-          if "both" == _exp_3 or "only" == _exp_3 then
-            local command_args = esbuild_args
-            if args.esbuild_metafile then
-              local metafile_output = package_output_target(package, ".min-metafile.json")
-              append_output(metafile_output)
-              command_args = command_args .. " --metafile=" .. tostring(shell_quote(metafile_output))
-            end
-            local bundle_target = append_output(package_output_target(package, ".min.js"))
-            if has_css then
-              append_output(package_output_target(package, ".min.css"))
-            end
-            if args.sourcemap then
-              append_output(tostring(bundle_target) .. ".map")
-              if has_css then
-                append_output(package_output_target(package, ".min.css.map"))
+            local has_css = types.one_of(args.css_packages or { })(package)
+            if generate_unminified then
+              local command_args = esbuild_args
+              if args.esbuild_metafile then
+                local metafile_output = append_output(package_output_target(package, "-metafile.json"))
+                command_args = command_args .. " --metafile=" .. tostring(shell_quote(metafile_output))
               end
+              local bundle_target = append_output(package_output_target(package))
+              if has_css then
+                append_output(package_output_target(package, ".css"))
+              end
+              if args.sourcemap then
+                append_output(tostring(bundle_target) .. ".map")
+                if has_css then
+                  append_output(package_output_target(package, ".css.map"))
+                end
+              end
+              print(tostring(bundle_target) .. ": " .. tostring(build_target))
+              print("", "NODE_PATH=" .. tostring(shell_quote(args.source_dir)) .. " $(ESBUILD) " .. tostring(command_args) .. " \"$<\" --outfile=\"$@\"")
+              print()
             end
-            print(tostring(bundle_target) .. ": " .. tostring(package_source_target(package)))
-            print("", "NODE_PATH=" .. tostring(shell_quote(args.source_dir)) .. " $(ESBUILD) " .. tostring(command_args) .. " --minify \"$<\" --outfile=\"$@\"")
+            if generate_minified then
+              local command_args = esbuild_args
+              if args.esbuild_metafile then
+                local metafile_output = append_output(package_output_target(package, ".min-metafile.json"))
+                command_args = command_args .. " --metafile=" .. tostring(shell_quote(metafile_output))
+              end
+              local bundle_target = append_output(package_output_target(package, ".min.js"))
+              if has_css then
+                append_output(package_output_target(package, ".min.css"))
+              end
+              if args.sourcemap then
+                append_output(tostring(bundle_target) .. ".map")
+                if has_css then
+                  append_output(package_output_target(package, ".min.css.map"))
+                end
+              end
+              print(tostring(bundle_target) .. ": " .. tostring(build_target))
+              print("", "NODE_PATH=" .. tostring(shell_quote(args.source_dir)) .. " $(ESBUILD) " .. tostring(command_args) .. " --minify \"$<\" --outfile=\"$@\"")
+              print()
+            end
+          elseif "module" == _exp_2 then
+            local build_target = append_output(package_output_target(package))
+            print(tostring(build_target) .. ": " .. tostring(table.concat(package_dependencies, " ")))
+            print("", "mkdir -p " .. tostring(shell_quote(args.output_dir)))
+            print("", [[(for file in $^; do echo 'import "]] .. join(to_output_root, "'$$file'") .. [[";' | sed 's/\.js//'; done) > "$@"]])
+            print()
+          elseif "concat" == _exp_2 then
+            local build_target = append_output(package_output_target(package))
+            print(tostring(build_target) .. ": " .. tostring(table.concat(package_dependencies, " ")))
+            print("", "mkdir -p " .. tostring(shell_quote(args.output_dir)))
+            print("", "cat $^ > \"$@\"")
             print()
           end
         end

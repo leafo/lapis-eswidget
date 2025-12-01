@@ -402,6 +402,23 @@ _M.run = (args) ->
                 print ": #{package_inputs} |> !bundle_js_minified |> #{output_with_extras package, ".min.js"}"
 
         when "makefile"
+          bundle_method = args.bundle_method or "esbuild"
+          supports_esbuild = bundle_method == "esbuild"
+          minify_mode = args.minify
+
+          unless supports_esbuild
+            if args.sourcemap
+              _M.print_warning "--sourcemap is not supported for bundle method: #{bundle_method}"
+            if args.esbuild_metafile
+              _M.print_warning "--esbuild-metafile is not supported for bundle method: #{bundle_method}"
+
+            if minify_mode != "none"
+              _M.print_warning "--minify is not supported for bundle method: #{bundle_method}, generating unminified bundles"
+              minify_mode = "none"
+
+          generate_unminified = minify_mode != "only"
+          generate_minified = supports_esbuild and minify_mode != "none"
+
           print "ESBUILD=#{shell_quote args.esbuild_bin or "esbuild"}"
           print!
 
@@ -415,9 +432,15 @@ _M.run = (args) ->
 
           bundle_outputs = {}
 
-          for package in pairs package_files
-            table.insert bundle_outputs, package_output_target package
-            table.insert bundle_outputs, package_output_target package, ".min.js"
+          if args.skip_bundle
+            for {:file} in *found_widgets
+              table.insert bundle_outputs, input_to_output file
+          else
+            for package in pairs package_files
+              if generate_unminified
+                table.insert bundle_outputs, package_output_target package
+              if generate_minified
+                table.insert bundle_outputs, package_output_target package, ".min.js"
 
           table.sort bundle_outputs
           print ".PHONY: all clean"
@@ -442,67 +465,80 @@ _M.run = (args) ->
           packages = [k for k in pairs package_files]
           table.sort packages
 
-          to_root = relative_to_top args.source_dir, "--source-dir"
+          to_source_root = relative_to_top args.source_dir, "--source-dir"
+          to_output_root = relative_to_top args.output_dir, "--output-dir"
 
-          for package in *packages
-            files = package_files[package]
-            print "# Building package: #{package}"
-            package_dependencies = [input_to_output file for file in *files]
-            print "#{append_output package_source_target package}: #{table.concat package_dependencies, " "}"
-            print "", "mkdir -p #{shell_quote args.source_dir}"
-            print "", [[(for file in $^; do echo 'import "]] .. join(to_root, "'$$file'") .. [[";' | sed 's/\.js//'; done) > "$@"]]
-            print!
+          unless args.skip_bundle
+            for package in *packages
+              files = package_files[package]
+              print "# Building package: #{package}"
+              package_dependencies = [input_to_output file for file in *files]
 
-            has_css = types.one_of(args.css_packages or {}) package
-
-            unless args.skip_bundle
-              -- unminified output
-              switch args.minify
-                when "both", "none"
-                  command_args = esbuild_args
-                  if args.esbuild_metafile
-                    metafile_output = package_output_target package, "-metafile.json"
-                    append_output metafile_output
-                    command_args ..= " --metafile=#{shell_quote metafile_output}"
-
-                  bundle_target = append_output package_output_target package
-
-                  if has_css
-                    append_output package_output_target package, ".css"
-
-                  if args.sourcemap
-                    append_output "#{bundle_target}.map"
-
-                    if has_css
-                      append_output package_output_target package, ".css.map"
-
-                  print "#{bundle_target}: #{package_source_target package}"
-                  print "", "NODE_PATH=#{shell_quote args.source_dir} $(ESBUILD) #{command_args} \"$<\" --outfile=\"$@\""
+              switch bundle_method
+                when "esbuild"
+                  build_target = append_output package_source_target package
+                  print "#{build_target}: #{table.concat package_dependencies, " "}"
+                  print "", "mkdir -p #{shell_quote args.source_dir}"
+                  print "", [[(for file in $^; do echo 'import "]] .. join(to_source_root, "'$$file'") .. [[";' | sed 's/\.js//'; done) > "$@"]]
                   print!
 
-              -- minified output
-              switch args.minify
-                when "both", "only"
-                  command_args = esbuild_args
+                  has_css = types.one_of(args.css_packages or {}) package
 
-                  if args.esbuild_metafile
-                    metafile_output = package_output_target package, ".min-metafile.json"
-                    append_output metafile_output
-                    command_args ..= " --metafile=#{shell_quote metafile_output}"
+                  if generate_unminified
+                    command_args = esbuild_args
+                    if args.esbuild_metafile
+                      metafile_output = append_output package_output_target package, "-metafile.json"
+                      command_args ..= " --metafile=#{shell_quote metafile_output}"
 
-                  bundle_target = append_output package_output_target package, ".min.js"
-
-                  if has_css
-                    append_output package_output_target package, ".min.css"
-
-                  if args.sourcemap
-                    append_output "#{bundle_target}.map"
+                    bundle_target = append_output package_output_target package
 
                     if has_css
-                      append_output package_output_target package, ".min.css.map"
+                      append_output package_output_target package, ".css"
 
-                  print "#{bundle_target}: #{package_source_target package}"
-                  print "", "NODE_PATH=#{shell_quote args.source_dir} $(ESBUILD) #{command_args} --minify \"$<\" --outfile=\"$@\""
+                    if args.sourcemap
+                      append_output "#{bundle_target}.map"
+
+                      if has_css
+                        append_output package_output_target package, ".css.map"
+
+                    print "#{bundle_target}: #{build_target}"
+                    print "", "NODE_PATH=#{shell_quote args.source_dir} $(ESBUILD) #{command_args} \"$<\" --outfile=\"$@\""
+                    print!
+
+                  if generate_minified
+                    command_args = esbuild_args
+
+                    if args.esbuild_metafile
+                      metafile_output = append_output package_output_target package, ".min-metafile.json"
+                      command_args ..= " --metafile=#{shell_quote metafile_output}"
+
+                    bundle_target = append_output package_output_target package, ".min.js"
+
+                    if has_css
+                      append_output package_output_target package, ".min.css"
+
+                    if args.sourcemap
+                      append_output "#{bundle_target}.map"
+
+                      if has_css
+                        append_output package_output_target package, ".min.css.map"
+
+                    print "#{bundle_target}: #{build_target}"
+                    print "", "NODE_PATH=#{shell_quote args.source_dir} $(ESBUILD) #{command_args} --minify \"$<\" --outfile=\"$@\""
+                    print!
+
+                when "module"
+                  build_target = append_output package_output_target package
+                  print "#{build_target}: #{table.concat package_dependencies, " "}"
+                  print "", "mkdir -p #{shell_quote args.output_dir}"
+                  print "", [[(for file in $^; do echo 'import "]] .. join(to_output_root, "'$$file'") .. [[";' | sed 's/\.js//'; done) > "$@"]]
+                  print!
+
+                when "concat"
+                  build_target = append_output package_output_target package
+                  print "#{build_target}: #{table.concat package_dependencies, " "}"
+                  print "", "mkdir -p #{shell_quote args.output_dir}"
+                  print "", "cat $^ > \"$@\""
                   print!
 
           print "# Misc rules"

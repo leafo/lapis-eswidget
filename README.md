@@ -176,6 +176,10 @@ you wish to explicitly import the widget code you want in your bundling system.
 The `module` bundle method can be used to aggregate a list of `import`
 statements in a single file that can be imported elsewhere.
 
+Bundle methods are supported for `json`, `tup`, and `makefile` outputs. For
+`makefile`, non-`esbuild` bundle methods skip minification, sourcemaps, and
+metafiles.
+
 ### `debug`
 
 ```

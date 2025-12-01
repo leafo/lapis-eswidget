@@ -282,6 +282,37 @@ window.init_Login = function(widget_selector, widget_params) {
 
       assert_expected_output "customized_makefile"
 
+    it "generates makefile with bundle method: module", ->
+      import run from require "lapis.eswidget.cmd"
+      run {
+        command: "generate_spec"
+        format: "makefile"
+        bundle_method: "module"
+        moonscript: true
+        widget_dirs: {"spec/views"}
+        source_dir: "spec/static/js"
+        output_dir: "spec/static"
+        esbuild_bin: "ezbuild"
+        minify: "none"
+      }
+
+      assert_expected_output "bundle_module_makefile"
+
+    it "generates makefile with bundle method: concat", ->
+      import run from require "lapis.eswidget.cmd"
+      run {
+        command: "generate_spec"
+        format: "makefile"
+        bundle_method: "concat"
+        moonscript: true
+        widget_dirs: {"spec/views"}
+        source_dir: "spec/static/js"
+        output_dir: "spec/static"
+        minify: "none"
+      }
+
+      assert_expected_output "bundle_concat_makefile"
+
 describe "eswidget", ->
   sorted_pairs!
 
