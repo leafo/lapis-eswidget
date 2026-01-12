@@ -23,6 +23,10 @@ parsed_args = false
       \option("--package")
       \option("--widget-dirs", "Paths where widgets are located. Only used for compiling by --package")\default("views,widgets")\convert to_array
 
+    with parser\command "compile_css", "Compile scoped CSS for a single widget"
+      \option("--module", "Load by Lua module name")
+      \option("--file", "Load by filename of a Lua module")
+
     with parser\command "generate_spec", "Scan widgets and generate specification for compiling bundles"
       \option("--minify", "Set how minified bundles should be generated")\choices({"both", "only", "none"})\default "both"
       \flag("--skip-bundle", "Skip generated final bundling command")

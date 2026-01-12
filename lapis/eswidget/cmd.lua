@@ -56,6 +56,31 @@ dump_args = function(args)
   end)(), ", ")
   return "{" .. tostring(out) .. "}"
 end
+local detect_widget_css
+detect_widget_css = function(widget_file_path)
+  local base_path = widget_file_path:gsub("%.moon$", ""):gsub("%.lua$", "")
+  local css_path = tostring(base_path) .. ".css"
+  local lfs = require("lfs")
+  local attr = lfs.attributes(css_path)
+  if attr and attr.mode == "file" then
+    return css_path
+  end
+  return nil
+end
+local scope_css
+scope_css = function(css_content, widget_class_name)
+  return "." .. tostring(widget_class_name) .. " {\n" .. tostring(css_content) .. "\n}"
+end
+local read_file
+read_file = function(path)
+  local f = io.open(path, "r")
+  if not (f) then
+    return nil, "failed to open file: " .. tostring(path)
+  end
+  local content = f:read("*a")
+  f:close()
+  return content
+end
 _M.run = function(args)
   local print
   print = function(...)
@@ -188,17 +213,55 @@ _M.run = function(args)
       end
     end)
   end
+  local has_css_import
+  has_css_import = function(widget)
+    local es_module = rawget(widget, "es_module")
+    if not (es_module) then
+      return false
+    end
+    for line in es_module:gmatch("([^\r\n]+)") do
+      if line:match("^%s*import.+%.css") then
+        return true
+      end
+    end
+    return false
+  end
+  local get_css_import_path
+  get_css_import_path = function(widget, widget_file)
+    if rawget(widget, "css_module") then
+      local base = widget_file:gsub("%.moon$", ""):gsub("%.lua$", "")
+      return "./" .. tostring(base) .. ".scoped.css"
+    end
+    if rawget(widget, "css_file") then
+      local base = widget_file:gsub("%.moon$", ""):gsub("%.lua$", "")
+      return "./" .. tostring(base) .. ".scoped.css"
+    end
+    if detect_widget_css(widget_file) and not has_css_import(widget) then
+      local base = widget_file:gsub("%.moon$", ""):gsub("%.lua$", "")
+      return "./" .. tostring(base) .. ".scoped.css"
+    end
+    return nil
+  end
   local _exp_0 = args.command
   if "compile_js" == _exp_0 then
     local invalid_module_error = "You attempted to compile a module that doesn't extend `lapis.eswidget`. Only ESWidget is supported for compiling to JavaScript"
     if args.file then
       local widget = require(path_to_module(args.file))
       assert(is_valid_widget(widget), invalid_module_error)
-      return print(assert(widget:compile_es_module()))
+      local css_path = get_css_import_path(widget, args.file)
+      local css_deps = widget.css_module_dependencies
+      return print(assert(widget:compile_es_module(css_path, css_deps)))
     elseif args.module then
       local widget = require(args.module)
       assert(is_valid_widget(widget), invalid_module_error)
-      return print(assert(widget:compile_es_module()))
+      local css_path
+      if rawget(widget, "css_module") then
+        css_path = nil
+      else
+        css_path = nil
+      end
+      local css_deps = widget.css_module_dependencies
+      return print(assert(widget:compile_es_module(css_path, css_deps)))
     elseif args.package then
       local count = 0
       local trim
@@ -212,7 +275,9 @@ _M.run = function(args)
             _continue_0 = true
             break
           end
-          local js_code = assert(widget:compile_es_module())
+          local css_path = get_css_import_path(widget, file)
+          local css_deps = widget.css_module_dependencies
+          local js_code = assert(widget:compile_es_module(css_path, css_deps))
           count = count + 1
           print("// " .. tostring(file) .. " (" .. tostring(table.concat(widget.asset_packages, ", ")) .. ")")
           print(trim(js_code))
@@ -229,12 +294,86 @@ _M.run = function(args)
     else
       return error("You called compile_js but did not specify what to compile. Provide one of: --file, --module, or --package")
     end
+  elseif "compile_css" == _exp_0 then
+    local invalid_module_error = "You attempted to compile CSS for a module that doesn't extend `lapis.eswidget`"
+    local get_widget_css
+    get_widget_css = function(widget, widget_file)
+      local widget_class_name = widget:widget_class_name()
+      do
+        local css_module = rawget(widget, "css_module")
+        if css_module then
+          return scope_css(css_module, widget_class_name)
+        end
+      end
+      do
+        local css_file = rawget(widget, "css_file")
+        if css_file then
+          local base_dir = widget_file:match("^(.*/)") or ""
+          local full_css_path = base_dir .. css_file
+          local css_content, err = read_file(full_css_path)
+          if not (css_content) then
+            error("Failed to read CSS file " .. tostring(full_css_path) .. ": " .. tostring(err))
+          end
+          return scope_css(css_content, widget_class_name)
+        end
+      end
+      do
+        local sidecar_css = detect_widget_css(widget_file)
+        if sidecar_css then
+          local css_content, err = read_file(sidecar_css)
+          if not (css_content) then
+            error("Failed to read sidecar CSS file " .. tostring(sidecar_css) .. ": " .. tostring(err))
+          end
+          return scope_css(css_content, widget_class_name)
+        end
+      end
+      return nil, "Widget has no CSS (no @css_module, @css_file, or sidecar CSS file)"
+    end
+    local ESWidget = require("lapis.eswidget")
+    if args.file then
+      local widget = require(path_to_module(args.file))
+      assert(subclass_of(ESWidget)(widget), invalid_module_error)
+      local css, err = get_widget_css(widget, args.file)
+      if css then
+        return print(css)
+      else
+        return error(err)
+      end
+    elseif args.module then
+      local widget = require(args.module)
+      assert(subclass_of(ESWidget)(widget), invalid_module_error)
+      local css = widget:compile_css_module()
+      if css then
+        return print(css)
+      else
+        return error("Widget has no @css_module (use --file for sidecar CSS support)")
+      end
+    else
+      return error("You called compile_css but did not specify what to compile. Provide --file or --module")
+    end
   elseif "generate_spec" == _exp_0 then
     local to_json
     to_json = require("lapis.util").to_json
     local input_to_output
     input_to_output = function(input_fname)
       return input_fname:gsub("%." .. tostring(search_extension) .. "$", "") .. ".js"
+    end
+    local input_to_css_output
+    input_to_css_output = function(input_fname)
+      return input_fname:gsub("%." .. tostring(search_extension) .. "$", "") .. ".scoped.css"
+    end
+    local widget_has_css
+    widget_has_css = function(widget, widget_file)
+      if rawget(widget, "css_module") then
+        return true, "inline"
+      end
+      if rawget(widget, "css_file") then
+        return true, "explicit"
+      end
+      if detect_widget_css(widget_file) and not has_css_import(widget) then
+        return true, "sidecar"
+      end
+      return false, nil
     end
     local package_source_target
     package_source_target = function(package)
@@ -280,11 +419,13 @@ _M.run = function(args)
           output_dir = args.output_dir
         }
       }
+      local packages_with_css = { }
       for _des_0 in each_widget() do
         local module_name, widget, file
         module_name, widget, file = _des_0.module_name, _des_0.widget, _des_0.file
         asset_spec.widgets = asset_spec.widgets or { }
-        asset_spec.widgets[module_name] = {
+        local has_css, css_type = widget_has_css(widget, file)
+        local widget_info = {
           path = file,
           target = input_to_output(file),
           name = widget:widget_name(),
@@ -293,18 +434,22 @@ _M.run = function(args)
             widget:widget_class_list()
           }
         }
+        if has_css then
+          widget_info.has_css = true
+          widget_info.css_type = css_type
+          widget_info.css_target = input_to_css_output(file)
+        end
+        asset_spec.widgets[module_name] = widget_info
         if next(widget.asset_packages) then
           local _list_0 = widget.asset_packages
           for _index_0 = 1, #_list_0 do
             local package = _list_0[_index_0]
+            if has_css then
+              packages_with_css[package] = true
+            end
             asset_spec.packages = asset_spec.packages or { }
             if not (asset_spec.packages[package]) then
               asset_spec.packages[package] = {
-                css_target = (function()
-                  if types.one_of(args.css_packages or { })(package) then
-                    return package_output_target(package, ".css")
-                  end
-                end)(),
                 source_target = package_source_target(package),
                 bundle_target = package_output_target(package),
                 bundle_min_target = package_output_target(package, ".min.js"),
@@ -313,6 +458,12 @@ _M.run = function(args)
             end
             table.insert(asset_spec.packages[package].widgets, module_name)
           end
+        end
+      end
+      for package, pkg_info in pairs(asset_spec.packages or { }) do
+        if packages_with_css[package] or types.one_of(args.css_packages or { })(package) then
+          pkg_info.css_target = package_output_target(package, ".css")
+          pkg_info.css_min_target = package_output_target(package, ".min.css")
         end
       end
       return print(to_json(asset_spec))
@@ -327,6 +478,7 @@ _M.run = function(args)
       end
       print()
       print("!compile_js = |> ^ compile_js %f > %o^ lapis-eswidget compile_js " .. tostring(args.moonscript and "--moonscript" or "") .. " --file %f > %o |>")
+      print("!compile_css = |> ^ compile_css %f > %o^ lapis-eswidget compile_css " .. tostring(args.moonscript and "--moonscript" or "") .. " --file %f > %o |>")
       local separate_minify = false
       local output_args = { }
       if not (args.skip_bundle) then
@@ -418,6 +570,52 @@ _M.run = function(args)
         end
         return table.concat(out, " ")
       end
+      local packages_with_css = { }
+      local css_rules = { }
+      for _des_0 in each_widget() do
+        local file, module_name, widget
+        file, module_name, widget = _des_0.file, _des_0.module_name, _des_0.widget
+        local has_css, css_type = widget_has_css(widget, file)
+        if has_css then
+          local css_out_file = input_to_css_output(file)
+          local _list_0 = widget.asset_packages
+          for _index_0 = 1, #_list_0 do
+            local package = _list_0[_index_0]
+            packages_with_css[package] = true
+          end
+          table.insert(css_rules, ": " .. tostring(file) .. tostring(appended_group(args.tup_compile_dep_group, " | ")) .. " |> !compile_css |> " .. tostring(css_out_file))
+        end
+      end
+      if next(css_rules) then
+        table.sort(css_rules)
+        print("# CSS compilation")
+        for _index_0 = 1, #css_rules do
+          local rule = css_rules[_index_0]
+          print(rule)
+        end
+        print()
+      end
+      local effective_css_packages = args.css_packages or { }
+      if next(packages_with_css) then
+        for package in pairs(packages_with_css) do
+          local found = false
+          for _index_0 = 1, #effective_css_packages do
+            local existing = effective_css_packages[_index_0]
+            if existing == package then
+              found = true
+              break
+            end
+          end
+          if not (found) then
+            table.insert(effective_css_packages, package)
+          end
+        end
+      end
+      if next(effective_css_packages) then
+        output_args.css_packages = effective_css_packages
+      else
+        output_args.css_packages = nil
+      end
       local rules
       do
         local _accum_0 = { }
@@ -454,6 +652,7 @@ _M.run = function(args)
         end
         rules = _accum_0
       end
+      print("# JS compilation")
       table.sort(rules)
       for _index_0 = 1, #rules do
         local rule = rules[_index_0]
@@ -705,6 +904,20 @@ _M.run = function(args)
     print("class names:", table.concat({
       Widget:widget_class_list()
     }, ", "))
+    print()
+    print("CSS")
+    print("==================")
+    if rawget(Widget, "css_module") then
+      print("css_module:", "(inline CSS defined)")
+    elseif rawget(Widget, "css_file") then
+      print("css_file:", Widget.css_file)
+    else
+      print("(no CSS defined)")
+    end
+    local css_deps = Widget.css_module_dependencies
+    if css_deps and next(css_deps) then
+      print("css dependencies:", table.concat(css_deps, ", "))
+    end
     print()
     print()
     print("Dependencies")

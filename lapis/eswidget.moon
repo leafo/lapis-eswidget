@@ -53,8 +53,21 @@ class ESWidget extends Widget
 
   @es_module_init_function_name: => "init_#{@__name}"
 
+  -- CSS module support
+  -- @@css_module: [[]] -- inline CSS content
+  -- @@css_file: nil -- explicit CSS file path (relative to widget file)
+
+  -- Compile CSS module - returns CSS wrapped with widget class for scoping
+  -- Returns nil if no css_module is defined
+  @compile_css_module: =>
+    css = rawget @, "css_module"
+    return nil unless css
+    assert type(css) == "string", "@css_module must be a string"
+    ".#{@widget_class_name!} {\n#{css}\n}"
+
   -- This requires a Lua module and also adds the module name to the depedency
   -- array. Dependency array is then inserted as imports when compiling the es
+  -- module. Also tracks CSS dependencies from required modules.
   @require: (path) =>
     required = require path
 
@@ -74,6 +87,19 @@ class ESWidget extends Widget
 
       table.insert deps, path
 
+    -- track CSS dependencies if the required widget has css_module or css_file
+    if rawget(required, "css_module") or rawget(required, "css_file")
+      css_deps = rawget @, "css_module_dependencies"
+      unless css_deps
+        -- clone the parent class CSS dependencies
+        css_deps = if @css_module_dependencies
+          {unpack @css_module_dependencies}
+        else
+          {}
+        @css_module_dependencies = css_deps
+
+      table.insert css_deps, path
+
     required
 
   -- this splits apart the js_init into two parts
@@ -81,7 +107,9 @@ class ESWidget extends Widget
   -- TODO: this is pretty janky, as it doesn't undertsand the syntax of the
   -- import statement. It only just pulls the lines that begin with import to
   -- the top
-  @compile_es_module: =>
+  -- css_path: optional path to CSS file to import (will be prepended to imports)
+  -- css_deps: optional table of CSS dependency paths to import
+  @compile_es_module: (css_path, css_deps) =>
     -- TODO: how should this work with inheriting?
 
     -- minimally we can inherit dependencies
@@ -92,6 +120,17 @@ class ESWidget extends Widget
     -- split import and non-import statemetns
     import_lines = {}
     code_lines = {}
+
+    -- add CSS import if provided
+    if css_path
+      table.insert import_lines, "import \"#{css_path}\""
+
+    -- add CSS dependency imports
+    if css_deps
+      for path in *css_deps
+        -- convert module path to import path with .scoped.css extension
+        import_path = path\gsub "%.", "/"
+        table.insert import_lines, "import \"#{import_path}.scoped.css\""
 
     if deps
       for path in *deps

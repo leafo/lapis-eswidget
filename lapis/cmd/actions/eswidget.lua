@@ -26,6 +26,11 @@ return {
       _with_0:option("--widget-dirs", "Paths where widgets are located. Only used for compiling by --package"):default("views,widgets"):convert(to_array)
     end
     do
+      local _with_0 = parser:command("compile_css", "Compile scoped CSS for a single widget")
+      _with_0:option("--module", "Load by Lua module name")
+      _with_0:option("--file", "Load by filename of a Lua module")
+    end
+    do
       local _with_0 = parser:command("generate_spec", "Scan widgets and generate specification for compiling bundles")
       _with_0:option("--minify", "Set how minified bundles should be generated"):choices({
         "both",

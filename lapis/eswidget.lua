@@ -214,6 +214,14 @@ do
   self.es_module_init_function_name = function(self)
     return "init_" .. tostring(self.__name)
   end
+  self.compile_css_module = function(self)
+    local css = rawget(self, "css_module")
+    if not (css) then
+      return nil
+    end
+    assert(type(css) == "string", "@css_module must be a string")
+    return "." .. tostring(self:widget_class_name()) .. " {\n" .. tostring(css) .. "\n}"
+  end
   self.require = function(self, path)
     local required = require(path)
     if rawget(required, "es_module") then
@@ -233,15 +241,39 @@ do
       end
       table.insert(deps, path)
     end
+    if rawget(required, "css_module") or rawget(required, "css_file") then
+      local css_deps = rawget(self, "css_module_dependencies")
+      if not (css_deps) then
+        if self.css_module_dependencies then
+          css_deps = {
+            unpack(self.css_module_dependencies)
+          }
+        else
+          css_deps = { }
+        end
+        self.css_module_dependencies = css_deps
+      end
+      table.insert(css_deps, path)
+    end
     return required
   end
-  self.compile_es_module = function(self)
+  self.compile_es_module = function(self, css_path, css_deps)
     local deps = self.es_module_dependencies
     if not (rawget(self, "es_module") or deps) then
       return nil, "no @@es_module or @@es_module_dependencies"
     end
     local import_lines = { }
     local code_lines = { }
+    if css_path then
+      table.insert(import_lines, "import \"" .. tostring(css_path) .. "\"")
+    end
+    if css_deps then
+      for _index_0 = 1, #css_deps do
+        local path = css_deps[_index_0]
+        local import_path = path:gsub("%.", "/")
+        table.insert(import_lines, "import \"" .. tostring(import_path) .. ".scoped.css\"")
+      end
+    end
     if deps then
       for _index_0 = 1, #deps do
         local path = deps[_index_0]

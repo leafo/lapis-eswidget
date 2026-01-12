@@ -4,9 +4,11 @@ export LUA_PATH
 export LUA_CPATH
 
 !compile_js = |> ^ compile_js %f > %o^ lapis-eswidget compile_js --moonscript --file %f > %o |>
+!compile_css = |> ^ compile_css %f > %o^ lapis-eswidget compile_css --moonscript --file %f > %o |>
 !bundle_js = |> ^ esbuild bundle %o^ (for file in %f; do echo 'import "./'$file'";'; done) | NODE_PATH=spec/static/js $(ESBUILD) --target=es6 --log-level=warning --bundle --outfile=%o |>
 !bundle_js_minified = |> ^ esbuild minified bundle %o^ (for file in %f; do echo 'import "./'$file'";'; done) | NODE_PATH=spec/static/js $(ESBUILD) --target=es6 --log-level=warning --bundle --outfile=%o --minify |>
 
+# JS compilation
 : spec/views/login.moon |> !compile_js |> spec/views/login.js {package_main}
 : spec/views/user/settings.moon |> !compile_js |> spec/views/user/settings.js
 : spec/views/user_profile.moon |> !compile_js |> spec/views/user_profile.js {package_main}

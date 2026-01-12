@@ -602,6 +602,107 @@ window.get_started = function(widget_selector, widget_params) {
           alert('hi there')
 }]], output
 
+  describe "compile_css_module", ->
+    it "compiles inline css_module with scoping", ->
+      class StyledWidget extends require "lapis.eswidget"
+        @css_module: [[
+          color: blue;
+          .inner { padding: 10px; }
+        ]]
+
+      output = assert StyledWidget\compile_css_module!
+      -- The css_module content is wrapped with the widget class for scoping
+      assert.truthy output\match "^%.styled_widget_widget {"
+      assert.truthy output\match "color: blue"
+      assert.truthy output\match "%.inner"
+      assert.truthy output\match "}$"
+
+    it "returns nil when no css_module defined", ->
+      class PlainWidget extends require "lapis.eswidget"
+
+      assert.is_nil PlainWidget\compile_css_module!
+
+  describe "compile_es_module with CSS", ->
+    it "includes css_path when provided", ->
+      class StyledWidget extends require "lapis.eswidget"
+        @es_module: [[
+          console.log('hello')
+        ]]
+
+      output = assert StyledWidget\compile_es_module "./widget.scoped.css", nil
+      assert.same [[import "./widget.scoped.css"
+window.init_StyledWidget = function(widget_selector, widget_params) {
+          console.log('hello')
+}]], output
+
+    it "includes css dependencies", ->
+      class StyledWidget extends require "lapis.eswidget"
+        @es_module: [[
+          console.log('hello')
+        ]]
+
+      output = assert StyledWidget\compile_es_module nil, {"widgets.dep1", "widgets.dep2"}
+      assert.same [[import "widgets/dep1.scoped.css"
+import "widgets/dep2.scoped.css"
+window.init_StyledWidget = function(widget_selector, widget_params) {
+          console.log('hello')
+}]], output
+
+  describe "css_module_dependencies via @require", ->
+    with_modules = (imports, fn) ->
+      old_loaded = {}
+
+      for name, value in pairs imports
+        old_loaded[name] = package.loaded[name]
+        package.loaded[name] = value
+
+      ok, err = pcall fn
+
+      for name, value in pairs old_loaded
+        package.loaded[name] = value
+
+      assert ok, err
+
+    it "tracks css dependencies from required modules", ->
+      with_modules {
+        "widgets.styled_dep": {
+          css_module: "color: red;"
+        }
+      }, ->
+        class MyWidget extends require "lapis.eswidget"
+          @es_module: [[console.log('test')]]
+          Dep = @require "widgets.styled_dep"
+
+        assert.same {
+          "widgets.styled_dep"
+        }, rawget(MyWidget, "css_module_dependencies")
+
+    it "tracks css_file dependencies", ->
+      with_modules {
+        "widgets.file_dep": {
+          css_file: "./custom.css"
+        }
+      }, ->
+        class MyWidget extends require "lapis.eswidget"
+          @es_module: [[console.log('test')]]
+          Dep = @require "widgets.file_dep"
+
+        assert.same {
+          "widgets.file_dep"
+        }, rawget(MyWidget, "css_module_dependencies")
+
+    it "ignores modules without css", ->
+      with_modules {
+        "widgets.no_css": {
+          es_module: "alert('hi')"
+        }
+      }, ->
+        class MyWidget extends require "lapis.eswidget"
+          @es_module: [[console.log('test')]]
+          Dep = @require "widgets.no_css"
+
+        assert.is_nil rawget(MyWidget, "css_module_dependencies")
+
   describe "prop_types", ->
     import types from require "tableshape"
 

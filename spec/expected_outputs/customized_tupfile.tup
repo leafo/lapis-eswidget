@@ -5,8 +5,10 @@ export LUA_CPATH
 ESBUILD=ezbuild
 
 !compile_js = |> ^ compile_js %f > %o^ lapis-eswidget compile_js --moonscript --file %f > %o |>
+!compile_css = |> ^ compile_css %f > %o^ lapis-eswidget compile_css --moonscript --file %f > %o |>
 !bundle_js_minified = |> ^ esbuild minified bundle %o^ (for file in %f; do echo 'import "./'$file'";'; done) | NODE_PATH=spec/static/js $(ESBUILD) --target=es6 --log-level=warning --bundle --sourcemap --metafile=%O-metafile.json --outfile=%o --minify |>
 
+# JS compilation
 : spec/views/login.moon | $(TOP)/<moon> |> !compile_js |> spec/views/login.js $(TOP)/<modules> {package_main}
 : spec/views/user/settings.moon | $(TOP)/<moon> |> !compile_js |> spec/views/user/settings.js $(TOP)/<modules>
 : spec/views/user_profile.moon | $(TOP)/<moon> |> !compile_js |> spec/views/user_profile.js $(TOP)/<modules> {package_main}

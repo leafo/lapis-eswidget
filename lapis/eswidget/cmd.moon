@@ -33,6 +33,33 @@ dump_args = (args) ->
   out = table.concat ["#{to_json t[1]}: #{to_json t[2]}" for t in *tuples], ", "
   "{#{out}}"
 
+-- Detect if a sidecar CSS file exists for a widget file
+-- widget_file_path: "views/login.moon" or "views/login.lua"
+-- Returns CSS file path if found, nil otherwise
+detect_widget_css = (widget_file_path) ->
+  base_path = widget_file_path\gsub("%.moon$", "")\gsub("%.lua$", "")
+  css_path = "#{base_path}.css"
+
+  lfs = require "lfs"
+  attr = lfs.attributes css_path
+  if attr and attr.mode == "file"
+    return css_path
+
+  nil
+
+-- Wrap CSS content with widget class for scoping
+-- Returns scoped CSS string
+scope_css = (css_content, widget_class_name) ->
+  ".#{widget_class_name} {\n#{css_content}\n}"
+
+-- Read file contents
+read_file = (path) ->
+  f = io.open path, "r"
+  return nil, "failed to open file: #{path}" unless f
+  content = f\read "*a"
+  f\close!
+  content
+
 -- args should come from parsed argparse result
 _M.run = (args) ->
   print = (...) -> _M.print ...
@@ -42,6 +69,8 @@ _M.run = (args) ->
     search_extension = "moon"
     require "moonscript"
 
+  -- TODO: this picks up inherted widgets that don't implement es_module
+  -- themselves
   is_valid_widget = subclass_of(require "lapis.eswidget") * types.partial {
     es_module: types.string
   }
@@ -108,6 +137,36 @@ _M.run = (args) ->
           :widget
         }
 
+  -- Check if es_module already has CSS imports (for backward compatibility)
+  has_css_import = (widget) ->
+    es_module = rawget widget, "es_module"
+    return false unless es_module
+    for line in es_module\gmatch "([^\r\n]+)"
+      if line\match "^%s*import.+%.css"
+        return true
+    false
+
+  -- Determine CSS path for a widget (for JS import)
+  -- Returns path to import (relative), or nil if no CSS
+  get_css_import_path = (widget, widget_file) ->
+    -- Priority 1: inline @css_module (generates .scoped.css)
+    if rawget widget, "css_module"
+      base = widget_file\gsub("%.moon$", "")\gsub("%.lua$", "")
+      return "./#{base}.scoped.css"
+
+    -- Priority 2: explicit @css_file (generates .scoped.css)
+    if rawget widget, "css_file"
+      base = widget_file\gsub("%.moon$", "")\gsub("%.lua$", "")
+      return "./#{base}.scoped.css"
+
+    -- Priority 3: sidecar CSS file (generates .scoped.css)
+    -- Only auto-detect if es_module doesn't already have CSS imports (backward compatibility)
+    if detect_widget_css(widget_file) and not has_css_import(widget)
+      base = widget_file\gsub("%.moon$", "")\gsub("%.lua$", "")
+      return "./#{base}.scoped.css"
+
+    nil
+
   switch args.command
     when "compile_js"
       invalid_module_error = "You attempted to compile a module that doesn't extend `lapis.eswidget`. Only ESWidget is supported for compiling to JavaScript"
@@ -115,11 +174,23 @@ _M.run = (args) ->
       if args.file
         widget = require path_to_module args.file
         assert is_valid_widget(widget), invalid_module_error
-        print assert widget\compile_es_module!
+
+        -- Get CSS path and dependencies for this widget
+        css_path = get_css_import_path widget, args.file
+        css_deps = widget.css_module_dependencies
+
+        print assert widget\compile_es_module css_path, css_deps
       elseif args.module
         widget = require args.module
         assert is_valid_widget(widget), invalid_module_error
-        print assert widget\compile_es_module!
+        -- Without file path, we can't detect sidecar CSS, but can still use @css_module
+        css_path = if rawget widget, "css_module"
+          -- Can't generate proper path without file, skip CSS import
+          nil
+        else
+          nil
+        css_deps = widget.css_module_dependencies
+        print assert widget\compile_es_module css_path, css_deps
       elseif args.package
         count = 0
         import trim from require "lapis.util"
@@ -127,7 +198,10 @@ _M.run = (args) ->
         for {:file, :widget} in each_widget!
           continue unless types.array_contains(args.package) widget.asset_packages
 
-          js_code = assert widget\compile_es_module!
+          css_path = get_css_import_path widget, file
+          css_deps = widget.css_module_dependencies
+
+          js_code = assert widget\compile_es_module css_path, css_deps
           count += 1
           print "// #{file} (#{table.concat widget.asset_packages, ", "})"
           print trim js_code
@@ -138,11 +212,78 @@ _M.run = (args) ->
       else
         error "You called compile_js but did not specify what to compile. Provide one of: --file, --module, or --package"
 
+    when "compile_css"
+      -- Compile CSS for a widget, wrapping it with the widget class for scoping
+      -- Sources: inline @css_module, explicit @css_file, or sidecar CSS file
+      invalid_module_error = "You attempted to compile CSS for a module that doesn't extend `lapis.eswidget`"
+
+      get_widget_css = (widget, widget_file) ->
+        widget_class_name = widget\widget_class_name!
+
+        -- Priority 1: inline @css_module
+        if css_module = rawget widget, "css_module"
+          return scope_css css_module, widget_class_name
+
+        -- Priority 2: explicit @css_file
+        if css_file = rawget widget, "css_file"
+          -- css_file is relative to widget file, resolve it
+          base_dir = widget_file\match("^(.*/)")  or ""
+          full_css_path = base_dir .. css_file
+          css_content, err = read_file full_css_path
+          error "Failed to read CSS file #{full_css_path}: #{err}" unless css_content
+          return scope_css css_content, widget_class_name
+
+        -- Priority 3: sidecar CSS file (auto-detected)
+        if sidecar_css = detect_widget_css widget_file
+          css_content, err = read_file sidecar_css
+          error "Failed to read sidecar CSS file #{sidecar_css}: #{err}" unless css_content
+          return scope_css css_content, widget_class_name
+
+        nil, "Widget has no CSS (no @css_module, @css_file, or sidecar CSS file)"
+
+      ESWidget = require "lapis.eswidget"
+
+      if args.file
+        widget = require path_to_module args.file
+        assert subclass_of(ESWidget)(widget), invalid_module_error
+        css, err = get_widget_css widget, args.file
+        if css
+          print css
+        else
+          error err
+      elseif args.module
+        -- For module, we don't have the file path, so we can only compile @css_module
+        widget = require args.module
+        assert subclass_of(ESWidget)(widget), invalid_module_error
+        css = widget\compile_css_module!
+        if css
+          print css
+        else
+          error "Widget has no @css_module (use --file for sidecar CSS support)"
+      else
+        error "You called compile_css but did not specify what to compile. Provide --file or --module"
+
     when "generate_spec"
       import to_json from require "lapis.util"
 
       input_to_output = (input_fname) ->
         input_fname\gsub("%.#{search_extension}$", "") .. ".js"
+
+      -- Generate scoped CSS output path from widget file
+      input_to_css_output = (input_fname) ->
+        input_fname\gsub("%.#{search_extension}$", "") .. ".scoped.css"
+
+      -- Check if a widget has CSS (any of the three sources)
+      -- For sidecar detection, only consider it if es_module doesn't already have CSS imports
+      widget_has_css = (widget, widget_file) ->
+        if rawget widget, "css_module"
+          return true, "inline"
+        if rawget widget, "css_file"
+          return true, "explicit"
+        -- Only auto-detect sidecar if no existing CSS imports (backward compatibility)
+        if detect_widget_css(widget_file) and not has_css_import(widget)
+          return true, "sidecar"
+        false, nil
 
       -- TODO: this will be removed when intermediate build file is removed for esbuild bundling
       package_source_target = (package) ->
@@ -188,9 +329,14 @@ _M.run = (args) ->
             }
           }
 
+          -- Track packages that have widgets with CSS
+          packages_with_css = {}
+
           for {:module_name, :widget, :file} in each_widget!
             asset_spec.widgets or= {}
-            asset_spec.widgets[module_name] = {
+
+            has_css, css_type = widget_has_css widget, file
+            widget_info = {
               path: file
               target: input_to_output file
               name: widget\widget_name!
@@ -198,14 +344,23 @@ _M.run = (args) ->
               class_list: { widget\widget_class_list! }
             }
 
+            -- Add CSS info if widget has CSS
+            if has_css
+              widget_info.has_css = true
+              widget_info.css_type = css_type
+              widget_info.css_target = input_to_css_output file
+
+            asset_spec.widgets[module_name] = widget_info
+
             if next widget.asset_packages
               for package in *widget.asset_packages
+                if has_css
+                  packages_with_css[package] = true
+
                 asset_spec.packages or= {}
 
                 unless asset_spec.packages[package]
                   asset_spec.packages[package] = {
-                    css_target: if types.one_of(args.css_packages or {}) package
-                      package_output_target package, ".css"
                     source_target: package_source_target package
                     bundle_target: package_output_target package
                     bundle_min_target: package_output_target package, ".min.js"
@@ -213,6 +368,12 @@ _M.run = (args) ->
                   }
 
                 table.insert asset_spec.packages[package].widgets, module_name
+
+          -- Set CSS targets for packages that have CSS
+          for package, pkg_info in pairs asset_spec.packages or {}
+            if packages_with_css[package] or types.one_of(args.css_packages or {})(package)
+              pkg_info.css_target = package_output_target package, ".css"
+              pkg_info.css_min_target = package_output_target package, ".min.css"
 
           print to_json asset_spec
 
@@ -230,6 +391,7 @@ _M.run = (args) ->
 
           -- declare macros used by individual file commands
           print "!compile_js = |> ^ compile_js %f > %o^ lapis-eswidget compile_js #{args.moonscript and "--moonscript" or ""} --file %f > %o |>"
+          print "!compile_css = |> ^ compile_css %f > %o^ lapis-eswidget compile_css #{args.moonscript and "--moonscript" or ""} --file %f > %o |>"
 
           separate_minify = false
 
@@ -313,6 +475,44 @@ _M.run = (args) ->
 
             table.concat out, " "
 
+          -- Track packages that have widgets with CSS for auto-detection
+          packages_with_css = {}
+
+          -- Generate CSS rules first (CSS must be compiled before JS imports it)
+          css_rules = {}
+          for {:file, :module_name, :widget} in each_widget!
+            has_css, css_type = widget_has_css widget, file
+            if has_css
+              css_out_file = input_to_css_output file
+              -- Track that this package has CSS
+              for package in *widget.asset_packages
+                packages_with_css[package] = true
+              -- CSS rule: compile CSS from widget file (handles sidecar, inline, or explicit)
+              table.insert css_rules, ": #{file}#{appended_group args.tup_compile_dep_group, " | "} |> !compile_css |> #{css_out_file}"
+
+          if next css_rules
+            table.sort css_rules
+            print "# CSS compilation"
+            for rule in *css_rules
+              print rule
+            print!
+
+          -- Auto-detect CSS packages if not explicitly specified
+          effective_css_packages = args.css_packages or {}
+          if next packages_with_css
+            -- Merge auto-detected packages with explicit ones
+            for package in pairs packages_with_css
+              found = false
+              for existing in *effective_css_packages
+                if existing == package
+                  found = true
+                  break
+              unless found
+                table.insert effective_css_packages, package
+
+          -- Update output_args with effective CSS packages
+          output_args.css_packages = if next(effective_css_packages) then effective_css_packages else nil
+
           rules = for {:file, :module_name, :widget} in each_widget!
             for package in *widget.asset_packages
               package_files[package] or= {}
@@ -333,6 +533,7 @@ _M.run = (args) ->
 
             ": #{file}#{appended_group args.tup_compile_dep_group, " | "} |> !compile_js |> #{out_file}#{appended_group args.tup_compile_out_group, " "}#{bin or ""}"
 
+          print "# JS compilation"
           table.sort rules
           for rule in *rules
             print rule
@@ -523,6 +724,21 @@ _M.run = (args) ->
       print "packages:", table.concat Widget.asset_packages, ", "
       print "init method:", Widget\es_module_init_function_name!
       print "class names:", table.concat { Widget\widget_class_list!}, ", "
+      print!
+
+      -- CSS info
+      print "CSS"
+      print "=================="
+      if rawget Widget, "css_module"
+        print "css_module:", "(inline CSS defined)"
+      elseif rawget Widget, "css_file"
+        print "css_file:", Widget.css_file
+      else
+        print "(no CSS defined)"
+
+      css_deps = Widget.css_module_dependencies
+      if css_deps and next css_deps
+        print "css dependencies:", table.concat css_deps, ", "
       print!
 
       -- TODO: do we want this?
