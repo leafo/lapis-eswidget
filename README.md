@@ -341,6 +341,82 @@ reduce total bundle sizes.
 The first asset package in the list of asset packages is used to calculate the
 canonical path for Associated Files (see below).
 
+### Organizing Dependencies
+
+Manually setting `@asset_packages` on every widget can be tedious and
+error-prone when managing dependencies for larger projects spread across
+different packages. For this reason, this project provides a way to connect the
+dependencies of widgets so that all dependencies are automatically included in
+the final bundle. This is done with the `@require` class method.
+
+#### Entry Points
+
+You can think of widgets that have `@asset_packages` defined as *entry points*,
+they will always be in the bundle. It's common to have a top level view or
+layout assigned to a package. Shared widgets aren't entry points, but
+dependencies of entry points.
+
+#### Dependencies with `@require`
+
+The `@require` method lets you require a Lua module while automatically
+recording a JavaScript import dependency. When you call `@require
+"some.module"`:
+
+1. The Lua module is required and returned (just like the standard `require`)
+2. If the module has an `es_module` field, a matching JavaScript import is recorded
+3. The recorded imports are inserted at the top of the compiled ES module output
+
+Module paths are converted from Lua-style dots to JavaScript-style slashes
+(e.g., `widgets.shared_button` becomes `widgets/shared_button`).
+
+#### Example
+
+A shared component widget that has `es_module` but no `@asset_packages`:
+
+```moonscript
+-- widgets/shared_button.moon
+class SharedButton extends require "lapis.eswidget"
+  @es_module: [[
+    document.querySelector(widget_selector).addEventListener("click", (event) =>
+      if (event.target.matches("button")) {
+        console.log("clicked button...")
+      }
+    )
+  ]]
+
+  inner_content: =>
+    button type: "button", "Click me"
+```
+
+An entry point widget that uses `@require` to include the shared component.
+Note that this page widget doesn't explicitly have an `@es_module` field. It's
+automatically created since it has a dependency.
+
+```moonscript
+-- widgets/my_page.moon
+class MyPage extends require "lapis.eswidget"
+  @asset_packages: {"main"}
+
+  SharedButton = @require "widgets.shared_button"
+
+  inner_content: =>
+    h1 "Welcome to my page"
+    widget SharedButton!
+```
+
+When compiling `MyPage`, the output will include the auto-generated import:
+
+```javascript
+import "widgets/shared_button"
+```
+
+#### Key Behaviors
+
+- **Only ES modules are tracked**: Dependencies are only recorded for modules that have an `es_module` field. Plain Lua modules without `es_module` are required normally but won't add imports.
+- **Automatic `es_module` initialization**: If your widget uses `@require` on an ES module but doesn't have its own `@es_module` defined, an empty `es_module` will be created automatically.
+- **Dependencies inherit through hierarchy**: When a widget class inherits from another, the parent's dependencies are included in the child's compiled output.
+- **Order preserved**: Imports are inserted in the order `@require` calls are made.
+
 ### Associated Files
 
 **TODO**: This is not exposed currently
