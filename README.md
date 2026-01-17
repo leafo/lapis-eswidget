@@ -345,9 +345,9 @@ canonical path for Associated Files (see below).
 
 Manually setting `@asset_packages` on every widget can be tedious and
 error-prone when managing dependencies for larger projects spread across
-different packages. For this reason, this project provides a way to connect the
-dependencies of widgets so that all dependencies are automatically included in
-the final bundle. This is done with the `@require` class method.
+different packages. For this reason, the `@require` method can be used to
+declare dependency relationships between widgets so that when a widget is
+bundled it will always have any dependency code imported automatically.
 
 #### Entry Points
 
